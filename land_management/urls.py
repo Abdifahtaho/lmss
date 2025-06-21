@@ -6,7 +6,7 @@ app_name = 'land_management'
 
 urlpatterns = [
     # Authentication URLs
-    path('login/', auth_views.LoginView.as_view(template_name='land_management/login.html'), name='login'),
+    path('login/', auth_views.LoginView.as_view(template_name='land_management/general/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='land_management:login'), name='logout'),
     
     # Application URLs
@@ -30,4 +30,5 @@ urlpatterns = [
     path('certificates/', views.certificate_list, name='certificate_list'),
     path('certificate/<int:registration_id>/', views.generate_certificate, name='generate_certificate'),
     path('certificate/<int:registration_id>/download/', views.download_certificate_pdf, name='download_certificate_pdf'),
+    path('reports/', views.report, name='report'),
 ] 

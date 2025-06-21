@@ -1,0 +1,360 @@
+{% extends 'land_management/general/base.html' %}
+
+{% block title %}Registration Details - LOMS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Registration Details: {{ registration.transaction_reference }}</h2>
+            <a href="{% url 'land_management:dashboard' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+
+        <!-- Basic Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Basic Information</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <p><strong>Transaction Reference:</strong> {{ registration.transaction_reference }}</p>
+                        <p><strong>Date of Sale:</strong> {{ registration.date_of_sale }}</p>
+                        <p><strong>Register Date:</strong> {{ registration.register_date }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>Sale Price:</strong> {{ registration.sale_price }} SLS</p>
+                        <p><strong>Current Step:</strong> {{ registration.current_step|title }}</p>
+                        <p><strong>Status:</strong> 
+                            {% if registration.status == 'pending' %}
+                            <span class="badge bg-warning">Pending</span>
+                            {% elif registration.status == 'approved' %}
+                            <span class="badge bg-success">Approved</span>
+                            {% else %}
+                            <span class="badge bg-danger">Rejected</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seller Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Seller Information</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Full Name:</strong> {{ registration.seller_full_name }}</p>
+                        <p><strong>National ID:</strong> {{ registration.seller_national_id }}</p>
+                        <p><strong>Birth Date:</strong> {{ registration.seller_birth_date }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Phone:</strong> {{ registration.seller_phone }}</p>
+                        <p><strong>Address:</strong> {{ registration.seller_address|default:"Not provided" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Buyer Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Buyer Information</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Full Name:</strong> {{ registration.buyer_full_name }}</p>
+                        <p><strong>National ID:</strong> {{ registration.buyer_national_id }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Phone:</strong> {{ registration.buyer_phone }}</p>
+                        <p><strong>Address:</strong> {{ registration.buyer_address|default:"Not provided" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Land Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Land Information</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Land Code:</strong> {{ registration.land_code }}</p>
+                        <p><strong>Land Size:</strong> {{ registration.land_size }} {{ registration.size_unit }}</p>
+                        <p><strong>Land Use Type:</strong> {{ registration.land_use_type|title }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Zone:</strong> {{ registration.land_zone }}</p>
+                        <p><strong>District:</strong> {{ registration.land_district }}</p>
+                        <p><strong>Region:</strong> {{ registration.land_region }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Land Direction Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Land Direction Information</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <p><strong>East Direction:</strong> {{ registration.land_direction_east|title|default:"Not specified" }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>South Direction:</strong> {{ registration.land_direction_south|title|default:"Not specified" }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>West Direction:</strong> {{ registration.land_direction_west|title|default:"Not specified" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Document Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Document Information</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Title Deed Number:</strong> {{ registration.title_deed_number|default:"Not provided" }}</p>
+                        <p><strong>Title Deed Date:</strong> {{ registration.title_deed_date|default:"Not provided" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Sale Deed Number:</strong> {{ registration.sale_deed_number }}</p>
+                        <p><strong>Sale Deed Date:</strong> {{ registration.sale_deed_date }}</p>
+                    </div>
+                </div>
+                <p><strong>Uploaded Documents:</strong>
+                    {% if registration.documents %}
+                        <a href="{{ registration.documents.url }}" target="_blank">View Document ({{ registration.documents.name|default:""|slice:"-20:" }})</a>
+                    {% else %}
+                        <span class="text-muted">No documents uploaded for this registration.</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- Transaction Participants -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Transaction Participants</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Notary Name:</strong> {{ registration.notary_name }}</p>
+                        <p><strong>Guarantor Name:</strong> {{ registration.guarantor_name|default:"Not provided" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Witness 1:</strong> {{ registration.witness1_name }}</p>
+                        <p><strong>Witness 2:</strong> {{ registration.witness2_name }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Survey Payment Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Survey Payment Information</h4>
+            </div>
+            <div class="card-body">
+                {% if survey_payment %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Payer Name:</strong> {{ survey_payment.payer_name }}</p>
+                        <p><strong>Payment Amount:</strong> {{ survey_payment.payment_amount }}</p>
+                        <p><strong>Payment Method:</strong> {{ survey_payment.payment_method|title }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Payment Date:</strong> {{ survey_payment.payment_date }}</p>
+                        <p><strong>Payment Status:</strong> <span class="badge bg-info">{{ survey_payment.payment_status|title }}</span></p>
+                        <p><strong>Receipt:</strong> <a href="{{ survey_payment.payment_receipt.url }}" target="_blank">View Receipt</a></p>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted">No survey payment information available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Land Survey Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Land Survey Information</h4>
+            </div>
+            <div class="card-body">
+                {% if land_survey %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Survey Number:</strong> {{ land_survey.survey_number }}</p>
+                        <p><strong>Parcel Number:</strong> {{ land_survey.parcel_number }}</p>
+                        <p><strong>Surveyor Name:</strong> {{ land_survey.surveyor_name }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Survey Date:</strong> {{ land_survey.survey_date }}</p>
+                        <p><strong>Location:</strong> {{ land_survey.survey_location }}</p>
+                        <p><strong>Documents:</strong> <a href="{{ land_survey.survey_documents.url }}" target="_blank">View Documents</a></p>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted">No land survey information available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Tax Payment Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Tax Payment Information</h4>
+            </div>
+            <div class="card-body">
+                {% if tax_payment %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Land Owner:</strong> {{ tax_payment.land_owner_name }}</p>
+                        <p><strong>Tax Price:</strong> {{ tax_payment.tax_price }}</p>
+                        <p><strong>Payment Date:</strong> {{ tax_payment.payment_date }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Payment Status:</strong> <span class="badge bg-info">{{ tax_payment.payment_status|title }}</span></p>
+                        <p><strong>Receipt Number:</strong> {{ tax_payment.receipt_number }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted">No tax payment information available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Land Mapping Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Land Mapping Information</h4>
+            </div>
+            <div class="card-body">
+                {% if land_mapping %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Land Reference:</strong> {{ land_mapping.land_reference }}</p>
+                        <p><strong>Mapping Date:</strong> {{ land_mapping.mapping_date }}</p>
+                        <p><strong>Mapped By:</strong> {{ land_mapping.mapped_by }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Map Coordinates:</strong> {{ land_mapping.map_coordinates }}</p>
+                        <p><strong>Mapping Status:</strong> <span class="badge bg-info">{{ land_mapping.mapping_status|title }}</span></p>
+                        <p><strong>Map Document:</strong> <a href="{{ land_mapping.map_document.url }}" target="_blank">View Map</a></p>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted">No land mapping information available yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Approval Process Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Approval Process Information</h4>
+            </div>
+            <div class="card-body">
+                {% if approval %}
+                <p><strong>Current Approval Level:</strong> <span class="badge bg-secondary">{{ approval.current_approval_level|title|cut:"_" }}</span></p>
+
+                {% if approval.return_step %}
+                <div class="alert alert-warning mt-3" role="alert">
+                    This registration was **Returned for Correction** at the <strong>{{ approval.return_step|title|cut:"_" }}</strong> step by <strong>{{ approval.returned_by|default:"N/A" }}</strong> on {{ approval.rejection_date|date:"M d, Y H:i" }}.<br/>
+                    <strong>Reason:</strong> {{ approval.rejection_reason|default:"No reason provided." }}
+                </div>
+                {% endif %}
+
+                <h5>Director Approval</h5>
+                <p>Status: <span class="badge bg-{% if approval.director_status == 'approved' %}success{% elif approval.director_status == 'rejected' %}danger{% else %}warning{% endif %}">{{ approval.director_status|title }}</span></p>
+                {% if approval.director_comment %}<p>Comment: {{ approval.director_comment }}</p>{% endif %}
+                {% if approval.director_approval_date %}<p>Date: {{ approval.director_approval_date }}</p>{% endif %}
+
+                {% if approval.current_approval_level != 'director_pending' %}
+                <h5>Secretary Approval</h5>
+                <p>Status: <span class="badge bg-{% if approval.secretary_status == 'approved' %}success{% elif approval.secretary_status == 'rejected' %}danger{% else %}warning{% endif %}">{{ approval.secretary_status|title }}</span></p>
+                {% if approval.secretary_comment %}<p>Comment: {{ approval.secretary_comment }}</p>{% endif %}
+                {% if approval.secretary_approval_date %}<p>Date: {{ approval.secretary_approval_date }}</p>{% endif %}
+                {% endif %}
+
+                {% if approval.current_approval_level != 'director_pending' and approval.current_approval_level != 'secretary_pending' %}
+                <h5>Deputy Mayor Approval</h5>
+                <p>Status: <span class="badge bg-{% if approval.deputy_mayor_status == 'approved' %}success{% elif approval.deputy_mayor_status == 'rejected' %}danger{% else %}warning{% endif %}">{{ approval.deputy_mayor_status|title }}</span></p>
+                {% if approval.deputy_mayor_comment %}<p>Comment: {{ approval.deputy_mayor_comment }}</p>{% endif %}
+                {% if approval.deputy_mayor_approval_date %}<p>Date: {{ approval.deputy_mayor_approval_date }}</p>{% endif %}
+                {% endif %}
+
+                {% if approval.current_approval_level != 'director_pending' and approval.current_approval_level != 'secretary_pending' and approval.current_approval_level != 'deputy_mayor_pending' %}
+                <h5>Mayor Approval</h5>
+                <p>Status: <span class="badge bg-{% if approval.mayor_status == 'approved' %}success{% elif approval.mayor_status == 'rejected' %}danger{% else %}warning{% endif %}">{{ approval.mayor_status|title }}</span></p>
+                {% if approval.mayor_comment %}<p>Comment: {{ approval.mayor_comment }}</p>{% endif %}
+                {% if approval.mayor_approval_date %}<p>Date: {{ approval.mayor_approval_date }}</p>{% endif %}
+                {% endif %}
+
+                {% else %}
+                <p class="text-muted">No approval process initiated yet for this registration.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Next Steps -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Next Steps</h4>
+            </div>
+            <div class="card-body">
+                {% if registration.current_step == 'registration' %}
+                <a href="{% url 'land_management:edit_land_registration' registration.id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> Edit Registration
+                </a>
+                {% elif registration.current_step == 'survey_payment' %}
+                <a href="{% url 'land_management:survey_payment' registration.id %}" class="btn btn-primary">
+                    <i class="fas fa-money-bill"></i> Proceed to Survey Payment
+                </a>
+                {% elif registration.current_step == 'land_survey' %}
+                <a href="{% url 'land_management:land_survey' registration.id %}" class="btn btn-primary">
+                    <i class="fas fa-map"></i> Proceed to Land Survey
+                </a>
+                {% elif registration.current_step == 'tax_payment' %}
+                <a href="{% url 'land_management:tax_payment' registration.id %}" class="btn btn-primary">
+                    <i class="fas fa-file-invoice-dollar"></i> Proceed to Tax Payment
+                </a>
+                {% elif registration.current_step == 'land_mapping' %}
+                <a href="{% url 'land_management:land_mapping' registration.id %}" class="btn btn-primary">
+                    <i class="fas fa-map-marked-alt"></i> Proceed to Land Mapping
+                </a>
+                {% endif %}
+                
+                {% if registration.current_step == 'land_mapping' or approval %}
+                <a href="{% url 'land_management:approval_process' registration.id %}" class="btn btn-info ms-2">
+                    <i class="fas fa-check-circle"></i> View Approval Process
+                </a>
+                {% endif %}
+
+                {% if registration.status == 'approved' and approval and approval.mayor_status == 'approved' %}
+                <a href="{% url 'land_management:generate_certificate' registration.id %}" class="btn btn-success ms-2">
+                    <i class="fas fa-award"></i> Generate Certificate
+                </a>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

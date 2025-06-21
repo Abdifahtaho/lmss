@@ -1,0 +1,57 @@
+{% extends 'land_management/general/base.html' %}
+
+{% block title %}Director Approvals{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Director Approvals</h3>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Transaction Reference</th>
+                                    <th>Land Owner</th>
+                                    <th>Land Code</th>
+                                    <th>Registration Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for approval in approvals %}
+                                <tr>
+                                    <td>{{ approval.land_registration.transaction_reference }}</td>
+                                    <td>{{ approval.land_registration.buyer_full_name }}</td>
+                                    <td>{{ approval.land_registration.land_code }}</td>
+                                    <td>{{ approval.land_registration.register_date|date:"M d, Y" }}</td>
+                                    <td>
+                                        <span class="badge {% if approval.director_status == 'pending' %}bg-warning{% elif approval.director_status == 'approved' %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ approval.director_status|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'land_management:approval_process' approval.land_registration.id %}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-eye"></i> View Details
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No pending approvals found.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

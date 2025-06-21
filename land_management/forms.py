@@ -114,9 +114,10 @@ class TaxPaymentForm(forms.ModelForm):
 class LandMappingForm(forms.ModelForm):
     class Meta:
         model = LandMapping
-        exclude = ['land_registration', 'mapping_status']
+        exclude = ['land_registration']
         widgets = {
             'mapping_date': forms.DateInput(attrs={'type': 'date'}),
+            'mapping_status': forms.Select(attrs={'class': 'form-control'}),
         }
 
 class ApprovalForm(forms.ModelForm):

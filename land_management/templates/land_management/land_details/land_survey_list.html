@@ -1,0 +1,110 @@
+{% extends 'land_management/general/base.html' %}
+
+{% block title %}Land Surveys - LOMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Land Surveys</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if registrations_without_survey %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5>Pending Surveys</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Transaction Ref</th>
+                                            <th>Buyer</th>
+                                            <th>Land Code</th>
+                                            <th>Date</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for registration in registrations_without_survey %}
+                                        <tr>
+                                            <td>{{ registration.transaction_reference }}</td>
+                                            <td>{{ registration.buyer_full_name }}</td>
+                                            <td>{{ registration.land_code }}</td>
+                                            <td>{{ registration.date_of_sale }}</td>
+                                            <td>
+                                                <a href="{% url 'land_management:land_survey' registration.id %}" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-plus"></i> Add Survey
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if land_surveys %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Existing Land Surveys</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Transaction Ref</th>
+                                            <th>Survey Number</th>
+                                            <th>Surveyor</th>
+                                            <th>Date</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for survey in land_surveys %}
+                                        <tr>
+                                            <td>{{ survey.land_registration.transaction_reference }}</td>
+                                            <td>{{ survey.survey_number }}</td>
+                                            <td>{{ survey.surveyor_name }}</td>
+                                            <td>{{ survey.survey_date }}</td>
+                                            <td>
+                                                <a href="{% url 'land_management:land_survey' survey.land_registration.id %}" class="btn btn-info btn-sm">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if not land_surveys and not registrations_without_survey %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> No land surveys found. 
+                        <a href="{% url 'land_management:land_registration' %}" class="alert-link">Register a new land</a> to create a land survey after survey payment.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

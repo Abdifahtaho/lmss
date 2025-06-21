@@ -7,6 +7,7 @@ class LandRegistration(models.Model):
         ('pending', 'Pending'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
+        ('completed', 'Completed'),
     ]
     
     LAND_SIZE_CHOICES = [
@@ -77,7 +78,7 @@ class LandRegistration(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     rejection_comment = models.TextField(blank=True, null=True)
     current_step = models.CharField(max_length=50, default='registration')
-    documents = models.FileField(upload_to='land_documents/', validators=[FileExtensionValidator(['pdf', 'jpg', 'jpeg', 'png'])])
+    documents = models.FileField(upload_to='land_documents/', validators=[FileExtensionValidator(['pdf', 'jpg', 'jpeg', 'png'])], blank=True, null=True)
     
     def __str__(self):
         return f"Land Registration - {self.transaction_reference}"
@@ -189,6 +190,7 @@ class Approval(models.Model):
         ('land_survey', 'Land Survey'),
         ('tax_payment', 'Tax Payment'),
         ('land_mapping', 'Land Mapping'),
+        ('certificate_generated', 'Certificate Generated'),
     ]
 
     land_registration = models.OneToOneField(LandRegistration, on_delete=models.CASCADE)

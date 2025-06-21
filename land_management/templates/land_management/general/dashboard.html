@@ -1,0 +1,315 @@
+{% extends 'land_management/general/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-image: url('{% static "land_management/images/logo.png" %}'); /* Corrected image path */
+        background-size: cover; /* Cover the entire page */
+        background-position: center; /* Center the image */
+        background-repeat: no-repeat; /* Do not repeat the image */
+        background-attachment: fixed; /* Keep background fixed while scrolling */
+    }
+    /* Optional: Add a semi-transparent overlay to make text more readable */
+    .content-wrapper {
+        background-color: rgba(255, 255, 255, 0.85); /* White background with 85% opacity */
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+    }
+    .progress {
+        height: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="mb-4">
+        <h2>Welcome, {{ user.get_full_name|default:user.username }}!</h2>
+        <p class="text-muted">Here's a summary of your land management activity.</p>
+    </div>
+
+    {% if notifications %}
+    <div class="alert alert-warning">
+        <ul class="mb-0">
+            {% for note in notifications %}
+            <li>{{ note }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2 mb-3">
+            <div class="card bg-primary text-white shadow-sm">
+                <div class="card-body text-center">
+                    <div class="h5 mb-1">Total</div>
+                    <div class="display-6">{{ registrations.count }}</div>
+                    <div>Registrations</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="card bg-success text-white shadow-sm">
+                <div class="card-body text-center">
+                    <div class="h5 mb-1">Approved</div>
+                    <div class="display-6">{{ approved_count }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="card bg-warning text-white shadow-sm">
+                <div class="card-body text-center">
+                    <div class="h5 mb-1">Pending</div>
+                    <div class="display-6">{{ pending_count }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="card bg-danger text-white shadow-sm">
+                <div class="card-body text-center">
+                    <div class="h5 mb-1">Rejected</div>
+                    <div class="display-6">{{ rejected_count }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="card bg-info text-white shadow-sm">
+                <div class="card-body text-center">
+                    <div class="h5 mb-1">Completed</div>
+                    <div class="display-6">{{ completed_count }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="card bg-secondary text-white shadow-sm">
+                <div class="card-body text-center">
+                    <div class="h6 mb-1">Survey Paid</div>
+                    <div class="display-6">{{ paid_survey_count }}</div>
+                    <div class="h6 mb-1">Tax Paid</div>
+                    <div class="display-6">{{ paid_tax_count }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mb-4">
+        <a href="{% url 'land_management:edit_land_registration' 0 %}" class="btn btn-primary me-2"><i class="fas fa-plus"></i> New Registration</a>
+        <a href="{% url 'land_management:certificate_list' %}" class="btn btn-success me-2"><i class="fas fa-certificate"></i> Certificates</a>
+        <a href="#" class="btn btn-info me-2"><i class="fas fa-chart-line"></i> Download Report</a>
+        <a href="{% url 'land_management:logout' %}" class="btn btn-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </div>
+
+    <!-- Charts -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">Registrations Per Month</div>
+                <div class="card-body">
+                    <canvas id="regPerMonthChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">Approval Status Breakdown</div>
+                <div class="card-body">
+                    <canvas id="approvalStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search/Filter Bar -->
+    <form method="get" class="mb-3">
+        <div class="input-group">
+            <input type="text" name="search" class="form-control" placeholder="Search by buyer, code, or status...">
+            <button class="btn btn-outline-primary" type="submit"><i class="fas fa-search"></i> Search</button>
+        </div>
+    </form>
+
+    <!-- Advanced Filter Bar -->
+    <form method="get" class="mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label for="start_date" class="form-label">Start Date</label>
+                <input type="date" name="start_date" id="start_date" class="form-control" value="{{ start_date }}">
+            </div>
+            <div class="col-md-2">
+                <label for="end_date" class="form-label">End Date</label>
+                <input type="date" name="end_date" id="end_date" class="form-control" value="{{ end_date }}">
+            </div>
+            <div class="col-md-2">
+                <label for="status" class="form-label">Status</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All</option>
+                    <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="approved" {% if selected_status == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="rejected" {% if selected_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                    <option value="completed" {% if selected_status == 'completed' %}selected{% endif %}>Completed</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="region" class="form-label">Region</label>
+                <select name="region" id="region" class="form-select">
+                    <option value="all" {% if selected_region == 'all' %}selected{% endif %}>All</option>
+                    {% for region in all_regions %}
+                        <option value="{{ region }}" {% if selected_region == region %}selected{% endif %}>{{ region }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-primary w-100" type="submit"><i class="fas fa-filter"></i> Filter</button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Recent Activity Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">Recent Registrations</h3>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead>
+                        <tr>
+                            <th><a href="?sort_by=transaction_reference&sort_dir={% if sort_by == 'transaction_reference' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">Ref No.</a></th>
+                            <th><a href="?sort_by=buyer_full_name&sort_dir={% if sort_by == 'buyer_full_name' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">Buyer Name</a></th>
+                            <th><a href="?sort_by=land_code&sort_dir={% if sort_by == 'land_code' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">Land Code</a></th>
+                            <th><a href="?sort_by=status&sort_dir={% if sort_by == 'status' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">Status</a></th>
+                            <th><a href="?sort_by=current_step&sort_dir={% if sort_by == 'current_step' and sort_dir == 'asc' %}desc{% else %}asc{% endif %}">Current Step</a></th>
+                            <th>Progress</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for registration in recent_registrations %}
+                        <tr>
+                            <td>{{ registration.transaction_reference }}</td>
+                            <td>{{ registration.buyer_full_name }}</td>
+                            <td>{{ registration.land_code }}</td>
+                            <td>
+                                {% if registration.status == 'pending' %}
+                                <span class="badge bg-warning">{{ registration.status|title }}</span>
+                                {% elif registration.status == 'approved' %}
+                                <span class="badge bg-success">{{ registration.status|title }}</span>
+                                {% elif registration.status == 'rejected' %}
+                                <span class="badge bg-danger">{{ registration.status|title }}</span>
+                                {% elif registration.status == 'completed' %}
+                                <span class="badge bg-primary">{{ registration.status|title }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ registration.current_step|title|cut:"_" }}</td>
+                            <td>
+                                <div class="progress">
+                                    {% if registration.current_step == 'registration' %}
+                                    <div class="progress-bar bg-info" style="width: 16%">Registration</div>
+                                    {% elif registration.current_step == 'survey_payment' %}
+                                    <div class="progress-bar bg-info" style="width: 32%">Survey Payment</div>
+                                    {% elif registration.current_step == 'land_survey' %}
+                                    <div class="progress-bar bg-info" style="width: 48%">Land Survey</div>
+                                    {% elif registration.current_step == 'tax_payment' %}
+                                    <div class="progress-bar bg-info" style="width: 64%">Tax Payment</div>
+                                    {% elif registration.current_step == 'land_mapping' %}
+                                    <div class="progress-bar bg-info" style="width: 80%">Land Mapping</div>
+                                    {% elif registration.current_step == 'certificate_generated' or registration.status == 'completed' %}
+                                    <div class="progress-bar bg-success" style="width: 100%">Completed</div>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{% url 'land_management:registration_detail' registration.id %}" class="btn btn-info btn-sm">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                                {% if registration.status == 'pending' %}
+                                    {% if registration.current_step == 'registration' %}
+                                        <a href="{% url 'land_management:edit_land_registration' registration.id %}" class="btn btn-primary btn-sm ms-1">Continue</a>
+                                    {% elif registration.current_step == 'survey_payment' %}
+                                        <a href="{% url 'land_management:survey_payment' registration.id %}" class="btn btn-primary btn-sm ms-1">Continue</a>
+                                    {% elif registration.current_step == 'land_survey' %}
+                                        <a href="{% url 'land_management:land_survey' registration.id %}" class="btn btn-primary btn-sm ms-1">Continue</a>
+                                    {% elif registration.current_step == 'tax_payment' %}
+                                        <a href="{% url 'land_management:tax_payment' registration.id %}" class="btn btn-primary btn-sm ms-1">Continue</a>
+                                    {% elif registration.current_step == 'land_mapping' %}
+                                        <a href="{% url 'land_management:land_mapping' registration.id %}" class="btn btn-primary btn-sm ms-1">Continue</a>
+                                    {% endif %}
+                                {% elif registration.status == 'approved' or registration.status == 'completed' or registration.status == 'rejected' %}
+                                <button class="btn btn-secondary btn-sm ms-1" disabled>Completed</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Registrations Per Month Chart
+    const regPerMonthCtx = document.getElementById('regPerMonthChart').getContext('2d');
+    new Chart(regPerMonthCtx, {
+        type: 'line',
+        data: {
+            labels: {{ months|safe }},
+            datasets: [{
+                label: 'Registrations',
+                data: {{ reg_per_month|safe }},
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // Approval Status Breakdown Chart
+    const approvalStatusCtx = document.getElementById('approvalStatusChart').getContext('2d');
+    new Chart(approvalStatusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ approval_statuses|safe }},
+            datasets: [{
+                label: 'Approvals',
+                data: {{ approval_status_counts|safe }},
+                backgroundColor: [
+                    'rgba(255, 205, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(255, 205, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+{% endblock %} 

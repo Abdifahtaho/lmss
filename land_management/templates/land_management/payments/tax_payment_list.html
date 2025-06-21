@@ -1,0 +1,118 @@
+{% extends 'land_management/general/base.html' %}
+
+{% block title %}Tax Payments - LOMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Tax Payments</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if registrations_without_tax_payment %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5>Pending Tax Payments</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Transaction Ref</th>
+                                            <th>Buyer</th>
+                                            <th>Land Code</th>
+                                            <th>Date</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for registration in registrations_without_tax_payment %}
+                                        <tr>
+                                            <td>{{ registration.transaction_reference }}</td>
+                                            <td>{{ registration.buyer_full_name }}</td>
+                                            <td>{{ registration.land_code }}</td>
+                                            <td>{{ registration.date_of_sale }}</td>
+                                            <td>
+                                                <a href="{% url 'land_management:tax_payment' registration.id %}" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-plus"></i> Add Payment
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if tax_payments %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Existing Tax Payments</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Transaction Ref</th>
+                                            <th>Owner Name</th>
+                                            <th>Land Price</th>
+                                            <th>Tax Price</th>
+                                            <th>Date</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for payment in tax_payments %}
+                                        <tr>
+                                            <td>{{ payment.land_registration.transaction_reference }}</td>
+                                            <td>{{ payment.land_owner_name }}</td>
+                                            <td>{{ payment.land_price }} SLS</td>
+                                            <td>{{ payment.tax_price }} SLS</td>
+                                            <td>{{ payment.payment_date }}</td>
+                                            <td>
+                                                <span class="badge {% if payment.payment_status == 'paid' %}bg-success{% elif payment.payment_status == 'pending' %}bg-warning{% else %}bg-info{% endif %}">
+                                                    {{ payment.payment_status|title }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'land_management:tax_payment' payment.land_registration.id %}" class="btn btn-info btn-sm">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if not tax_payments and not registrations_without_tax_payment %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> No tax payments found. 
+                        <a href="{% url 'land_management:land_registration' %}" class="alert-link">Register a new land</a> to create a tax payment after land survey completion.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

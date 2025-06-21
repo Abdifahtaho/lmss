@@ -1,0 +1,122 @@
+{% extends 'land_management/general/base.html' %}
+{% block title %}Reports - Land Management System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">Comprehensive Report</h2>
+    <!-- Summary Stats -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <div class="h6">Total</div>
+                    <div class="display-6">{{ total }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <div class="h6">Completed</div>
+                    <div class="display-6">{{ completed }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <div class="h6">Pending</div>
+                    <div class="display-6">{{ pending }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <div class="h6">Approved</div>
+                    <div class="display-6">{{ approved }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <div class="h6">Rejected</div>
+                    <div class="display-6">{{ rejected }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Filters -->
+    <form method="get" class="row g-2 mb-4 align-items-end">
+        <div class="col-md-2">
+            <label for="start_date" class="form-label">Start Date</label>
+            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ start_date }}">
+        </div>
+        <div class="col-md-2">
+            <label for="end_date" class="form-label">End Date</label>
+            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ end_date }}">
+        </div>
+        <div class="col-md-2">
+            <label for="status" class="form-label">Status</label>
+            <select name="status" id="status" class="form-control">
+                <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All</option>
+                <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="approved" {% if selected_status == 'approved' %}selected{% endif %}>Approved</option>
+                <option value="completed" {% if selected_status == 'completed' %}selected{% endif %}>Completed</option>
+                <option value="rejected" {% if selected_status == 'rejected' %}selected{% endif %}>Rejected</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label for="region" class="form-label">Region</label>
+            <select name="region" id="region" class="form-control">
+                <option value="all" {% if selected_region == 'all' %}selected{% endif %}>All</option>
+                {% for region in all_regions %}
+                    <option value="{{ region }}" {% if selected_region == region %}selected{% endif %}>{{ region }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Filter</button>
+        </div>
+        <div class="col-md-2">
+            <a href="?{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}{% if selected_status %}status={{ selected_status }}&{% endif %}{% if selected_region %}region={{ selected_region }}&{% endif %}export=csv" class="btn btn-success w-100">Export CSV</a>
+        </div>
+    </form>
+    <!-- Table -->
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Transaction Ref</th>
+                    <th>Buyer</th>
+                    <th>Seller</th>
+                    <th>Land Code</th>
+                    <th>Status</th>
+                    <th>Region</th>
+                    <th>Register Date</th>
+                    <th>Sale Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reg in registrations %}
+                <tr>
+                    <td>{{ reg.transaction_reference }}</td>
+                    <td>{{ reg.buyer_full_name }}</td>
+                    <td>{{ reg.seller_full_name }}</td>
+                    <td>{{ reg.land_code }}</td>
+                    <td>{{ reg.status|title }}</td>
+                    <td>{{ reg.land_region }}</td>
+                    <td>{{ reg.register_date }}</td>
+                    <td>{{ reg.sale_price }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center">No registrations found for the selected filters.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %} 

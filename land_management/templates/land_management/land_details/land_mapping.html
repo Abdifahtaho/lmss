@@ -1,0 +1,464 @@
+{% extends 'general/base.html' %}
+
+{% block title %}Land Mapping - LOMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Land Mapping for {{ registration.transaction_reference }}</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <!-- Coordinate Display -->
+                    <div class="card mb-4 bg-light border">
+                        <div class="card-header bg-transparent">
+                            <h5 class="mb-0">Current Coordinates</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="latitude">Latitude</label>
+                                        <input type="text" id="latitude" class="form-control" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="longitude">Longitude</label>
+                                        <input type="text" id="longitude" class="form-control" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-4 bg-light border">
+                        <div class="card-header bg-transparent">
+                            <h5 class="mb-0">Land Registration Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Transaction Ref:</strong> {{ registration.transaction_reference }}</p>
+                                    <p><strong>Date of Sale:</strong> {{ registration.date_of_sale }}</p>
+                                    <p><strong>Sale Price:</strong> {{ registration.sale_price }} SLS</p>
+                                    <p><strong>Land Code:</strong> {{ registration.land_code }}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Buyer:</strong> {{ registration.buyer_full_name }}</p>
+                                    <p><strong>Land Size:</strong> {{ registration.land_size }} {{ registration.size_unit }}</p>
+                                    <p><strong>Land Zone:</strong> {{ registration.land_zone }}</p>
+                                    <p><strong>Land Use:</strong> {{ registration.land_use_type }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5>Land Mapping Details</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.land_reference.id_for_label }}" class="form-label">Land Reference</label>
+                                        {{ form.land_reference }}
+                                        {% if form.land_reference.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.land_reference.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.map_coordinates.id_for_label }}" class="form-label">Map Coordinates</label>
+                                        {{ form.map_coordinates }}
+                                        {% if form.map_coordinates.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.map_coordinates.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.mapping_date.id_for_label }}" class="form-label">Mapping Date</label>
+                                        {{ form.mapping_date }}
+                                        {% if form.mapping_date.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.mapping_date.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.mapped_by.id_for_label }}" class="form-label">Mapped By</label>
+                                        {{ form.mapped_by }}
+                                        {% if form.mapped_by.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.mapped_by.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.mapping_status.id_for_label }}" class="form-label">Mapping Status</label>
+                                        {{ form.mapping_status }}
+                                        {% if form.mapping_status.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.mapping_status.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.map_document.id_for_label }}" class="form-label">Map Document</label>
+                                        {{ form.map_document }}
+                                        {% if form.map_document.errors %}
+                                            <div class="invalid-feedback d-block">{{ form.map_document.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div id="map" style="height: 400px; width: 100%;"></div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <a href="{% url 'land_management:dashboard' %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Submit Mapping
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // JavaScript for Bootstrap form validation
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
+
+    let map;
+    let marker;
+    let geocoder;
+    let infoWindow;
+    let drawingManager;
+    let polygon;
+    let polygons = [];
+    let isDrawingMode = false;
+    let currentPolygon = null; // To store the currently drawn polygon
+    let areaLabel = null; // To store the InfoWindow for area display
+
+    function initMap() {
+        // Initialize the map with default coordinates (Sierra Leone)
+        const defaultCoordinates = {
+            lat: 8.460555,
+            lng: -11.779889
+        };
+
+        // Try to get existing coordinates or use default
+        let initialCoordinates;
+        try {
+            const coordinates = "{{ registration.land_mapping.map_coordinates|default:'' }}".split(',');
+            initialCoordinates = {
+                lat: parseFloat(coordinates[0]) || defaultCoordinates.lat,
+                lng: parseFloat(coordinates[1]) || defaultCoordinates.lng
+            };
+        } catch (e) {
+            initialCoordinates = defaultCoordinates;
+        }
+
+        // Initialize the map
+        map = new google.maps.Map(document.getElementById("map"), {
+            center: initialCoordinates,
+            zoom: 15,
+            mapTypeControl: true,
+            streetViewControl: true,
+            fullscreenControl: true,
+            zoomControl: true
+        });
+
+        // Add click listener to map for coordinates
+        map.addListener('click', function(e) {
+            document.getElementById('latitude').value = e.latLng.lat().toFixed(6);
+            document.getElementById('longitude').value = e.latLng.lng().toFixed(6);
+        });
+
+        // Initialize the geocoder
+        geocoder = new google.maps.Geocoder();
+        infoWindow = new google.maps.InfoWindow();
+
+        // Initialize the drawing manager
+        drawingManager = new google.maps.drawing.DrawingManager({
+            drawingMode: null,
+            drawingControl: true,
+            drawingControlOptions: {
+                position: google.maps.ControlPosition.TOP_CENTER,
+                drawingModes: [
+                    google.maps.drawing.OverlayType.POLYGON,
+                    google.maps.drawing.OverlayType.MARKER
+                ]
+            },
+            polygonOptions: {
+                fillColor: '#4CAF50',
+                fillOpacity: 0.2,
+                strokeWeight: 2,
+                strokeColor: '#FFFFFF',
+                clickable: true,
+                editable: true,
+                draggable: true
+            }
+        });
+        drawingManager.setMap(map);
+
+        // Event listener for when a new overlay (polygon) is complete
+        google.maps.event.addListener(drawingManager, 'overlaycomplete', function(event) {
+            if (event.type === google.maps.drawing.OverlayType.POLYGON) {
+                // Clear previous polygon and label if exists
+                if (currentPolygon) {
+                    currentPolygon.setMap(null);
+                    if (areaLabel) {
+                        areaLabel.setMap(null);
+                    }
+                }
+                currentPolygon = event.overlay;
+                currentPolygon.setEditable(true);
+                currentPolygon.setDraggable(true);
+
+                // Calculate and display area
+                calculateAndDisplayArea(currentPolygon);
+
+                // Listen for changes to the polygon
+                google.maps.event.addListener(currentPolygon.getPath(), 'insert_at', function() {
+                    calculateAndDisplayArea(currentPolygon);
+                });
+                google.maps.event.addListener(currentPolygon.getPath(), 'set_at', function() {
+                    calculateAndDisplayArea(currentPolygon);
+                });
+                google.maps.event.addListener(currentPolygon, 'dragend', function() {
+                    calculateAndDisplayArea(currentPolygon);
+                });
+
+                // Store polygon coordinates in a hidden input for submission
+                updatePolygonCoordinates(currentPolygon);
+            }
+            drawingManager.setDrawingMode(null); // Exit drawing mode after drawing
+        });
+
+        // Add a marker if coordinates exist
+        if (initialCoordinates.lat !== defaultCoordinates.lat || initialCoordinates.lng !== defaultCoordinates.lng) {
+            addMarker(initialCoordinates);
+        }
+
+        // Add search box
+        const input = document.createElement('input');
+        input.className = 'form-control';
+        input.placeholder = 'Search for a location...';
+        input.style.marginBottom = '10px';
+        input.style.padding = '8px';
+        input.style.width = '100%';
+        input.style.boxSizing = 'border-box';
+        
+        const searchBox = new google.maps.places.SearchBox(input);
+        document.getElementById('map').parentNode.insertBefore(input, document.getElementById('map'));
+
+        // Add drawing mode toggle button
+        const drawingButton = document.createElement('button');
+        drawingButton.className = 'btn btn-primary';
+        drawingButton.style.marginBottom = '10px';
+        drawingButton.style.marginRight = '10px';
+        drawingButton.innerHTML = 'Draw Area';
+        drawingButton.onclick = toggleDrawingMode;
+        document.getElementById('map').parentNode.insertBefore(drawingButton, document.getElementById('map'));
+
+        // Add clear button
+        const clearButton = document.createElement('button');
+        clearButton.className = 'btn btn-danger';
+        clearButton.style.marginBottom = '10px';
+        clearButton.innerHTML = 'Clear Area';
+        clearButton.onclick = clearAll;
+        document.getElementById('map').parentNode.insertBefore(clearButton, document.getElementById('map'));
+
+        // Add Delete Last Drawn button
+        const deleteLastButton = document.createElement('button');
+        deleteLastButton.className = 'btn btn-warning';
+        deleteLastButton.style.marginBottom = '10px';
+        deleteLastButton.style.marginRight = '10px';
+        deleteLastButton.innerHTML = 'Delete Last Drawn';
+        deleteLastButton.onclick = deleteLastDrawnShape;
+        document.getElementById('map').parentNode.insertBefore(deleteLastButton, document.getElementById('map')); 
+
+        // Bias the SearchBox results towards current map's viewport
+        map.addListener('bounds_changed', () => {
+            searchBox.setBounds(map.getBounds());
+        });
+
+        // Listen for the event fired when the user selects a prediction
+        searchBox.addListener('places_changed', () => {
+            const places = searchBox.getPlaces();
+            if (places.length === 0) return;
+
+            const place = places[0];
+            if (!place.geometry || !place.geometry.location) return;
+
+            // If the place has a geometry, then present it on a map
+            if (place.geometry.viewport) {
+                map.fitBounds(place.geometry.viewport);
+            } else {
+                map.setCenter(place.geometry.location);
+                map.setZoom(17);
+            }
+
+            // Add marker at the selected location
+            addMarker(place.geometry.location);
+            updateCoordinates(place.geometry.location);
+        });
+
+        // Try to load existing map document if available
+        const existingMapDocument = "{{ land_mapping.map_document.url|default:'' }}";
+        if (existingMapDocument) {
+            // In a real application, you might load the image onto the map as an overlay
+            // For now, we will just display a message or link if it's an image file.
+            console.log("Existing map document found: " + existingMapDocument);
+        }
+    }
+
+    function addMarker(location) {
+        if (marker) {
+            marker.setMap(null);
+        }
+        marker = new google.maps.Marker({
+            position: location,
+            map: map,
+            draggable: true
+        });
+
+        marker.addListener('dragend', function() {
+            updateCoordinates(marker.getPosition());
+        });
+
+        updateCoordinates(location);
+    }
+
+    function updateCoordinates(location) {
+        const lat = location.lat().toFixed(6);
+        const lng = location.lng().toFixed(6);
+        document.getElementById('latitude').value = lat;
+        document.getElementById('longitude').value = lng;
+        document.getElementById('id_map_coordinates').value = `${lat},${lng}`;
+    }
+
+    function calculateAndDisplayArea(polygon) {
+        const area = google.maps.geometry.spherical.computeArea(polygon.getPath());
+        const areaInSqMeters = area.toFixed(2);
+        const areaInSqFeet = (area * 10.7639).toFixed(2); // Conversion from sq meters to sq feet
+
+        const contentString = `<div><strong>Area:</strong> ${areaInSqMeters} Sq. Meters (${areaInSqFeet} Sq. Ft.)</div>`;
+
+        if (!areaLabel) {
+            areaLabel = new google.maps.InfoWindow();
+        }
+
+        // Position the label at the centroid of the polygon
+        const bounds = new google.maps.LatLngBounds();
+        polygon.getPath().forEach(function(latLng) {
+            bounds.extend(latLng);
+        });
+        areaLabel.setPosition(bounds.getCenter());
+        areaLabel.setContent(contentString);
+        areaLabel.open(map);
+
+        // Update the hidden input with the area (if you want to save it)
+        document.getElementById('id_map_coordinates').value = `Area: ${areaInSqMeters} Sq. Meters (${areaInSqFeet} Sq. Ft.)` + " | " + getPolygonCoordinates(polygon);
+    }
+
+    function getPolygonCoordinates(polygon) {
+        const path = polygon.getPath();
+        let coords = [];
+        for (let i = 0; i < path.getLength(); i++) {
+            const latLng = path.getAt(i);
+            coords.push(`${latLng.lat().toFixed(6)},${latLng.lng().toFixed(6)}`);
+        }
+        return coords.join(';');
+    }
+
+    function updatePolygonCoordinates(polygon) {
+        const coords = getPolygonCoordinates(polygon);
+        // Assuming you have a hidden input field named 'map_coordinates' in your form
+        // You might need to adjust the ID based on your Django form rendering
+        document.getElementById('id_map_coordinates').value = coords;
+    }
+
+    function toggleDrawingMode() {
+        isDrawingMode = !isDrawingMode;
+        if (isDrawingMode) {
+            drawingManager.setOptions({
+                drawingControl: true,
+                drawingMode: google.maps.drawing.OverlayType.POLYGON
+            });
+        } else {
+            drawingManager.setDrawingMode(null);
+        }
+    }
+
+    function clearAll() {
+        if (currentPolygon) {
+            currentPolygon.setMap(null);
+            currentPolygon = null;
+        }
+        if (areaLabel) {
+            areaLabel.setMap(null);
+            areaLabel = null;
+        }
+        document.getElementById('id_map_coordinates').value = ''; // Clear stored coordinates
+        // Also clear any existing markers if you implement them
+        if (marker) {
+            marker.setMap(null);
+            marker = null;
+        }
+        polygons = []; // Clear all stored polygons
+    }
+
+    function deleteLastDrawnShape() {
+        if (polygons.length > 0) {
+            const lastPolygon = polygons.pop();
+            lastPolygon.setMap(null);
+            if (areaLabel) {
+                areaLabel.setMap(null);
+                areaLabel = null;
+            }
+            // If you want to update the stored coordinates after deletion, you'll need to re-evaluate
+            // the coordinates of the remaining polygons, or clear the field if no polygons are left.
+            if (polygons.length === 0) {
+                document.getElementById('id_map_coordinates').value = '';
+            } else {
+                // This part needs more thought if you want to store multiple polygons' coordinates
+                // For now, assuming only one primary polygon is stored for registration.
+            }
+        } else if (currentPolygon) { // If only one polygon was drawn and not added to 'polygons' array
+            currentPolygon.setMap(null);
+            currentPolygon = null;
+            if (areaLabel) {
+                areaLabel.setMap(null);
+                areaLabel = null;
+            }
+            document.getElementById('id_map_coordinates').value = '';
+        }
+    }
+</script>
+
+<script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places,drawing&callback=initMap" async defer></script>
+{% endblock %} 

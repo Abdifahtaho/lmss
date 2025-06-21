@@ -1,0 +1,114 @@
+{% extends 'land_management/general/base.html' %}
+
+{% block title %}Land Mappings - LOMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">Land Mappings</h3>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if registrations_without_mapping %}
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5>Pending Mappings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Transaction Ref</th>
+                                            <th>Buyer</th>
+                                            <th>Land Code</th>
+                                            <th>Date</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for registration in registrations_without_mapping %}
+                                        <tr>
+                                            <td>{{ registration.transaction_reference }}</td>
+                                            <td>{{ registration.buyer_full_name }}</td>
+                                            <td>{{ registration.land_code }}</td>
+                                            <td>{{ registration.date_of_sale }}</td>
+                                            <td>
+                                                <a href="{% url 'land_management:land_mapping' registration.id %}" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-plus"></i> Add Mapping
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if land_mappings %}
+                    <div class="card">
+                        <div class="card-header">
+                            <h5>Existing Land Mappings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Transaction Ref</th>
+                                            <th>Mapped By</th>
+                                            <th>Mapping Date</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for mapping in land_mappings %}
+                                        <tr>
+                                            <td>{{ mapping.land_registration.transaction_reference }}</td>
+                                            <td>{{ mapping.mapped_by }}</td>
+                                            <td>{{ mapping.mapping_date }}</td>
+                                            <td>
+                                                <span class="badge {% if mapping.mapping_status == 'completed' %}bg-success{% elif mapping.mapping_status == 'pending' %}bg-warning{% else %}bg-info{% endif %}">
+                                                    {{ mapping.mapping_status|title }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'land_management:land_mapping' mapping.land_registration.id %}" class="btn btn-info btn-sm">
+                                                    <i class="fas fa-edit"></i> Edit
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if not land_mappings and not registrations_without_mapping %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> No land mappings found. 
+                        <a href="{% url 'land_management:land_registration' %}" class="alert-link">Register a new land</a> to create a land mapping after tax payment completion.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
