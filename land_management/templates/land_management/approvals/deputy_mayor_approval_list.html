@@ -57,7 +57,7 @@
                     {% endif %}
 
                     <h4 class="mt-4">Existing Deputy Mayor Approvals (In Progress)</h4>
-                    {% if existing_approvals %}
+                    {% if existing_deputy_mayor_actions %}
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
                             <thead>
@@ -70,7 +70,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for approval in existing_approvals %}
+                                {% for approval in existing_deputy_mayor_actions %}
                                 <tr>
                                     <td>{{ approval.land_registration.transaction_reference }}</td>
                                     <td><span class="badge bg-info">{{ approval.deputy_mayor_status|title }}</span></td>

@@ -1,39 +1,180 @@
 {% extends 'land_management/general/base.html' %}
+{% load static %}
 
 {% block title %}Login - Land Management System{% endblock %}
 
 {% block content %}
+<style>
+    body {
+        background: linear-gradient(135deg, #f8fafc 60%, #e0e7ff 100%);
+    }
+    .login-card {
+        border-radius: 18px;
+        box-shadow: 0 8px 32px 0 rgba(31, 7, 83, 0.12);
+        background: #fff;
+        overflow: hidden;
+        animation: fadeInUp 0.8s cubic-bezier(.39,.575,.56,1.000);
+    }
+    @keyframes fadeInUp {
+        0% { opacity: 0; transform: translateY(40px); }
+        100% { opacity: 1; transform: none; }
+    }
+    .login-logo {
+        display: block;
+        margin: 0 auto 18px auto;
+        width: 80px;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px rgba(31, 7, 83, 0.08);
+        background: #fff;
+        padding: 8px;
+        border: 2px solid #e0e7ff;
+        animation: logoBounce 1.2s;
+    }
+    @keyframes logoBounce {
+        0% { transform: scale(0.8); }
+        60% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+    .login-header {
+        background: linear-gradient(90deg, #2563eb 60%, #1f0753 100%);
+        color: #fff;
+        border-bottom: none;
+        text-align: center;
+        padding: 2rem 1rem 1rem 1rem;
+    }
+    .login-header h4 {
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+    }
+    .welcome-msg {
+        color: #e0e7ff;
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+    .social-login {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-bottom: 1.2rem;
+    }
+    .social-btn {
+        border: none;
+        border-radius: 6px;
+        padding: 0.5rem 1.2rem;
+        font-weight: 600;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 2px 8px rgba(31, 7, 83, 0.08);
+        transition: background 0.2s;
+        cursor: pointer;
+    }
+    .social-btn.google { background: #fff; color: #ea4335; border: 1px solid #ea4335; }
+    .social-btn.google:hover { background: #ea4335; color: #fff; }
+    .social-btn.microsoft { background: #fff; color: #0078d4; border: 1px solid #0078d4; }
+    .social-btn.microsoft:hover { background: #0078d4; color: #fff; }
+    .form-control:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 0.2rem rgba(37,99,235,.15);
+    }
+    .btn-primary {
+        background: linear-gradient(90deg, #2563eb 60%, #1f0753 100%);
+        border: none;
+        font-weight: 600;
+        letter-spacing: 1px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(31, 7, 83, 0.08);
+    }
+    .btn-primary:hover {
+        background: linear-gradient(90deg, #1f0753 60%, #2563eb 100%);
+    }
+    .show-password-toggle {
+        position: absolute;
+        right: 1.2rem;
+        top: 2.5rem;
+        cursor: pointer;
+        color: #888;
+        z-index: 2;
+    }
+    .login-footer {
+        text-align: center;
+        color: #888;
+        font-size: 0.95rem;
+        margin-top: 1.5rem;
+    }
+    .login-footer a { color: #2563eb; text-decoration: underline; }
+    .fade-in {
+        animation: fadeIn 0.7s;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+</style>
 <div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Login</h4>
+        <div class="col-md-6 col-lg-5">
+            <div class="card login-card shadow">
+                <div class="login-header">
+                    <img src="{% static 'land_management/images/logo.png' %}" alt="Logo" class="login-logo" aria-label="Land Management Logo">
+                    <h4 class="mb-1">Welcome to Land Management</h4>
+                    <div class="welcome-msg">Please sign in to continue</div>
                 </div>
-                <div class="card-body">
-                    <form method="post" action="{% url 'land_management:login' %}">
+                <div class="card-body p-4">
+                    <div class="social-login">
+                        <button class="social-btn google" type="button" aria-label="Sign in with Google"><i class="fab fa-google"></i> Google</button>
+                        <button class="social-btn microsoft" type="button" aria-label="Sign in with Microsoft"><i class="fab fa-microsoft"></i> Microsoft</button>
+                    </div>
+                    <form method="post" action="{% url 'land_management:login' %}" autocomplete="on" aria-label="Login form">
                         {% csrf_token %}
                         {% if form.errors %}
-                            <div class="alert alert-danger">
-                                Your username and password didn't match. Please try again.
+                            <div class="alert alert-danger fade-in" role="alert" aria-live="assertive">
+                                <i class="fas fa-exclamation-circle me-2"></i> Your username and password didn't match. Please try again.
                             </div>
                         {% endif %}
                         <div class="mb-3">
                             <label for="id_username" class="form-label">Username</label>
-                            <input type="text" name="username" id="id_username" class="form-control" required>
+                            <input type="text" name="username" id="id_username" class="form-control" required autofocus autocomplete="username" aria-required="true">
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-3 position-relative">
                             <label for="id_password" class="form-label">Password</label>
-                            <input type="password" name="password" id="id_password" class="form-control" required>
+                            <input type="password" name="password" id="id_password" class="form-control" required autocomplete="current-password" aria-required="true">
+                            <span class="show-password-toggle" tabindex="0" aria-label="Show or hide password" onclick="togglePassword()"><i class="fas fa-eye" id="eyeIcon"></i></span>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe" name="remember">
+                            <label class="form-check-label" for="rememberMe">Remember me</label>
+                        </div>
+                        <div class="mb-3 text-end">
+                            <a href="#" class="text-decoration-none" tabindex="0">Forgot password?</a>
                         </div>
                         <input type="hidden" name="next" value="{{ next }}">
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Login</button>
+                            <button type="submit" class="btn btn-primary py-2" aria-label="Login">Login</button>
                         </div>
                     </form>
+                </div>
+                <div class="login-footer">
+                    &copy; {% now "Y" %} Land Management System. Need help? <a href="mailto:support@example.com">Contact Support</a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+<script>
+    function togglePassword() {
+        const pwd = document.getElementById('id_password');
+        const icon = document.getElementById('eyeIcon');
+        if (pwd.type === 'password') {
+            pwd.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            pwd.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+</script>
 {% endblock %} 

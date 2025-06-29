@@ -82,14 +82,14 @@
 </head>
 <body>
     <div class="wrapper">
-        {% if user.is_authenticated %}
+        {% if request.user.is_authenticated %}
         <!-- Sidebar -->
         <nav id="sidebar" style="background: linear-gradient(135deg, #343a40 70%, #1f0753 100%); box-shadow: 2px 0 10px rgba(0,0,0,0.08);">
             <div class="sidebar-header text-center mb-3">
-                <img src="{% static 'land_management/images/logo.png' %}" alt="Logo" style="max-width: 80px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.15); margin-bottom: 10px;">
+                <img src="{% static 'land_management/images/logo.png' %}" alt="Logo" style="max-width: 80px; border-radius: 50%; box-shadow: 0 2px 8px rgba(235, 224, 224, 0.15); margin-bottom: 10px; background: #fff; padding: 8px; border: 2px solid #fff;">
                 <h4 class="mt-2" style="font-weight: bold; color: #fff; letter-spacing: 1px;">LAND MANAGEMENT</h4>
                 <div class="mt-2 mb-2" style="color: #bdbdbd; font-size: 0.95em;">
-                    <i class="fas fa-user-circle"></i> {{ user.get_full_name|default:user.username }}
+                    <i class="fas fa-user-circle"></i> {{ request.user.get_full_name|default:request.user.username }}
                 </div>
             </div>
             <ul class="list-unstyled components">
@@ -108,6 +108,7 @@
                 <li class="text-uppercase text-muted small px-3 mt-3 mb-1">Other</li>
                 <li><a href="{% url 'land_management:certificate_list' %}"><i class="fas fa-certificate me-2"></i>Certificates</a></li>
                 <li><a href="{% url 'land_management:report' %}"><i class="fas fa-chart-line me-2"></i>Reports</a></li>
+                <li><a href="{% url 'land_management:profile' %}"><i class="fas fa-user me-2"></i>My Profile</a></li>
                 <li class="mt-3">
                     <form action="{% url 'land_management:logout' %}" method="post" style="display:inline;">
                         {% csrf_token %}
@@ -120,8 +121,9 @@
         </nav>
         {% endif %}
         <!-- Page Content -->
-        <div id="content" {% if not user.is_authenticated %}style="width:100%;"{% endif %}>
+        <div id="content" {% if not request.user.is_authenticated %}style="width:100%;"{% endif %}>
             <!-- Topbar (if any, currently using Bootstrap navbar from original) -->
+            {% if request.user.is_authenticated %}
             <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
                 <div class="container-fluid">
                     <button type="button" id="sidebarCollapse" class="btn btn-info">
@@ -131,6 +133,7 @@
                     <a class="navbar-brand ms-auto" href="{% url 'land_management:dashboard' %}"><H1 style="color: #1f0753;">SAMOTECH</H1></a>
                 </div>
             </nav>
+            {% endif %}
             <!-- Django Messages Display Area -->
             <div id="message-container" class="mt-3 mx-auto" style="max-width: 800px;">
                 {% if messages %}

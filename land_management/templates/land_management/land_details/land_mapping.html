@@ -264,68 +264,79 @@
         }
 
         // Add search box
-        const input = document.createElement('input');
-        input.className = 'form-control';
-        input.placeholder = 'Search for a location...';
-        input.style.marginBottom = '10px';
-        input.style.padding = '8px';
-        input.style.width = '100%';
-        input.style.boxSizing = 'border-box';
-        
-        const searchBox = new google.maps.places.SearchBox(input);
-        document.getElementById('map').parentNode.insertBefore(input, document.getElementById('map'));
+        if (!document.getElementById('map-search-box')) {
+            const input = document.createElement('input');
+            input.id = 'map-search-box';
+            input.className = 'form-control';
+            input.placeholder = 'Search for a location...';
+            input.style.marginBottom = '10px';
+            input.style.padding = '8px';
+            input.style.width = '100%';
+            input.style.boxSizing = 'border-box';
+            const searchBox = new google.maps.places.SearchBox(input);
+            document.getElementById('map').parentNode.insertBefore(input, document.getElementById('map'));
+
+            // Bias the SearchBox results towards current map's viewport
+            map.addListener('bounds_changed', () => {
+                searchBox.setBounds(map.getBounds());
+            });
+
+            // Listen for the event fired when the user selects a prediction
+            searchBox.addListener('places_changed', () => {
+                const places = searchBox.getPlaces();
+                if (places.length === 0) return;
+
+                const place = places[0];
+                if (!place.geometry || !place.geometry.location) return;
+
+                // If the place has a geometry, then present it on a map
+                if (place.geometry.viewport) {
+                    map.fitBounds(place.geometry.viewport);
+                } else {
+                    map.setCenter(place.geometry.location);
+                    map.setZoom(17);
+                }
+
+                // Add marker at the selected location
+                addMarker(place.geometry.location);
+                updateCoordinates(place.geometry.location);
+            });
+        }
 
         // Add drawing mode toggle button
-        const drawingButton = document.createElement('button');
-        drawingButton.className = 'btn btn-primary';
-        drawingButton.style.marginBottom = '10px';
-        drawingButton.style.marginRight = '10px';
-        drawingButton.innerHTML = 'Draw Area';
-        drawingButton.onclick = toggleDrawingMode;
-        document.getElementById('map').parentNode.insertBefore(drawingButton, document.getElementById('map'));
+        if (!document.getElementById('draw-area-btn')) {
+            const drawingButton = document.createElement('button');
+            drawingButton.id = 'draw-area-btn';
+            drawingButton.className = 'btn btn-primary';
+            drawingButton.style.marginBottom = '10px';
+            drawingButton.style.marginRight = '10px';
+            drawingButton.innerHTML = 'Draw Area';
+            drawingButton.onclick = toggleDrawingMode;
+            document.getElementById('map').parentNode.insertBefore(drawingButton, document.getElementById('map'));
+        }
 
         // Add clear button
-        const clearButton = document.createElement('button');
-        clearButton.className = 'btn btn-danger';
-        clearButton.style.marginBottom = '10px';
-        clearButton.innerHTML = 'Clear Area';
-        clearButton.onclick = clearAll;
-        document.getElementById('map').parentNode.insertBefore(clearButton, document.getElementById('map'));
+        if (!document.getElementById('clear-area-btn')) {
+            const clearButton = document.createElement('button');
+            clearButton.id = 'clear-area-btn';
+            clearButton.className = 'btn btn-danger';
+            clearButton.style.marginBottom = '10px';
+            clearButton.innerHTML = 'Clear Area';
+            clearButton.onclick = clearAll;
+            document.getElementById('map').parentNode.insertBefore(clearButton, document.getElementById('map'));
+        }
 
         // Add Delete Last Drawn button
-        const deleteLastButton = document.createElement('button');
-        deleteLastButton.className = 'btn btn-warning';
-        deleteLastButton.style.marginBottom = '10px';
-        deleteLastButton.style.marginRight = '10px';
-        deleteLastButton.innerHTML = 'Delete Last Drawn';
-        deleteLastButton.onclick = deleteLastDrawnShape;
-        document.getElementById('map').parentNode.insertBefore(deleteLastButton, document.getElementById('map')); 
-
-        // Bias the SearchBox results towards current map's viewport
-        map.addListener('bounds_changed', () => {
-            searchBox.setBounds(map.getBounds());
-        });
-
-        // Listen for the event fired when the user selects a prediction
-        searchBox.addListener('places_changed', () => {
-            const places = searchBox.getPlaces();
-            if (places.length === 0) return;
-
-            const place = places[0];
-            if (!place.geometry || !place.geometry.location) return;
-
-            // If the place has a geometry, then present it on a map
-            if (place.geometry.viewport) {
-                map.fitBounds(place.geometry.viewport);
-            } else {
-                map.setCenter(place.geometry.location);
-                map.setZoom(17);
-            }
-
-            // Add marker at the selected location
-            addMarker(place.geometry.location);
-            updateCoordinates(place.geometry.location);
-        });
+        if (!document.getElementById('delete-last-drawn-btn')) {
+            const deleteLastButton = document.createElement('button');
+            deleteLastButton.id = 'delete-last-drawn-btn';
+            deleteLastButton.className = 'btn btn-warning';
+            deleteLastButton.style.marginBottom = '10px';
+            deleteLastButton.style.marginRight = '10px';
+            deleteLastButton.innerHTML = 'Delete Last Drawn';
+            deleteLastButton.onclick = deleteLastDrawnShape;
+            document.getElementById('map').parentNode.insertBefore(deleteLastButton, document.getElementById('map'));
+        }
 
         // Try to load existing map document if available
         const existingMapDocument = "{{ land_mapping.map_document.url|default:'' }}";

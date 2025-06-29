@@ -1,0 +1,71 @@
+{% extends 'land_management/general/base.html' %}
+{% load static %}
+
+{% block title %}Edit User{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto mt-10 bg-white rounded-lg shadow p-8">
+    <h2 class="text-2xl font-bold mb-6 text-center">Edit User: {{ user_obj.username }}</h2>
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="p-3 rounded text-white mb-2 {% if message.tags == 'success' %}bg-green-500{% elif message.tags == 'error' %}bg-red-500{% else %}bg-blue-500{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <div>
+            <label for="id_username" class="block font-medium">Username</label>
+            {{ form.username }}
+            {% if form.username.errors %}
+                <p class="text-red-500 text-sm">{{ form.username.errors.0 }}</p>
+            {% endif %}
+        </div>
+        <div>
+            <label for="id_first_name" class="block font-medium">First Name</label>
+            {{ form.first_name }}
+            {% if form.first_name.errors %}
+                <p class="text-red-500 text-sm">{{ form.first_name.errors.0 }}</p>
+            {% endif %}
+        </div>
+        <div>
+            <label for="id_last_name" class="block font-medium">Last Name</label>
+            {{ form.last_name }}
+            {% if form.last_name.errors %}
+                <p class="text-red-500 text-sm">{{ form.last_name.errors.0 }}</p>
+            {% endif %}
+        </div>
+        <div>
+            <label for="id_email" class="block font-medium">Email</label>
+            {{ form.email }}
+            {% if form.email.errors %}
+                <p class="text-red-500 text-sm">{{ form.email.errors.0 }}</p>
+            {% endif %}
+        </div>
+        <div class="flex space-x-4">
+            <div>
+                <label for="id_is_active" class="inline-flex items-center">
+                    {{ form.is_active }} <span class="ml-2">Active</span>
+                </label>
+            </div>
+            <div>
+                <label for="id_is_staff" class="inline-flex items-center">
+                    {{ form.is_staff }} <span class="ml-2">Staff</span>
+                </label>
+            </div>
+            <div>
+                <label for="id_is_superuser" class="inline-flex items-center">
+                    {{ form.is_superuser }} <span class="ml-2">Superuser</span>
+                </label>
+            </div>
+        </div>
+        <div class="flex justify-between items-center mt-6">
+            <a href="{% url 'land_management:user_list' %}" class="text-blue-600 hover:underline">Back to User List</a>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded transition">Save Changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %} 

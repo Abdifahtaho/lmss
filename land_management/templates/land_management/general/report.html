@@ -3,120 +3,299 @@
 
 {% block content %}
 <div class="container-fluid">
-    <h2 class="mb-4">Comprehensive Report</h2>
-    <!-- Summary Stats -->
+    <!-- Header Section -->
     <div class="row mb-4">
-        <div class="col-md-2">
-            <div class="card bg-primary text-white">
-                <div class="card-body text-center">
-                    <div class="h6">Total</div>
-                    <div class="display-6">{{ total }}</div>
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1"><i class="fas fa-chart-line text-primary"></i> Comprehensive Land Management Report</h2>
+                    <p class="text-muted">Real-time analytics and insights for land registrations</p>
                 </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <div class="h6">Completed</div>
-                    <div class="display-6">{{ completed }}</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card bg-warning text-white">
-                <div class="card-body text-center">
-                    <div class="h6">Pending</div>
-                    <div class="display-6">{{ pending }}</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card bg-info text-white">
-                <div class="card-body text-center">
-                    <div class="h6">Approved</div>
-                    <div class="display-6">{{ approved }}</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-2">
-            <div class="card bg-danger text-white">
-                <div class="card-body text-center">
-                    <div class="h6">Rejected</div>
-                    <div class="display-6">{{ rejected }}</div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary" onclick="window.print()">
+                        <i class="fas fa-print"></i> Print Report
+                    </button>
+                    <a href="?{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}{% if selected_status %}status={{ selected_status }}&{% endif %}{% if selected_region %}region={{ selected_region }}&{% endif %}export=excel" class="btn btn-success">
+                        <i class="fas fa-download"></i> Export Excel
+                    </a>
                 </div>
             </div>
         </div>
     </div>
-    <!-- Filters -->
-    <form method="get" class="row g-2 mb-4 align-items-end">
-        <div class="col-md-2">
-            <label for="start_date" class="form-label">Start Date</label>
-            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ start_date }}">
+
+    <!-- Summary Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i class="fas fa-list-alt fa-2x text-primary"></i>
+                    </div>
+                    <h3 class="mb-1 text-primary">{{ total }}</h3>
+                    <p class="text-muted mb-0">Total Registrations</p>
+                </div>
+            </div>
         </div>
-        <div class="col-md-2">
-            <label for="end_date" class="form-label">End Date</label>
-            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ end_date }}">
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i class="fas fa-check-circle fa-2x text-success"></i>
+                    </div>
+                    <h3 class="mb-1 text-success">{{ completed }}</h3>
+                    <p class="text-muted mb-0">Completed</p>
+                    <small class="text-muted">{{ completed|floatformat:1 }}% of total</small>
+                </div>
+            </div>
         </div>
-        <div class="col-md-2">
-            <label for="status" class="form-label">Status</label>
-            <select name="status" id="status" class="form-control">
-                <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All</option>
-                <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
-                <option value="approved" {% if selected_status == 'approved' %}selected{% endif %}>Approved</option>
-                <option value="completed" {% if selected_status == 'completed' %}selected{% endif %}>Completed</option>
-                <option value="rejected" {% if selected_status == 'rejected' %}selected{% endif %}>Rejected</option>
-            </select>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i class="fas fa-clock fa-2x text-warning"></i>
+                    </div>
+                    <h3 class="mb-1 text-warning">{{ pending }}</h3>
+                    <p class="text-muted mb-0">Pending</p>
+                    <small class="text-muted">{{ pending|floatformat:1 }}% of total</small>
+                </div>
+            </div>
         </div>
-        <div class="col-md-2">
-            <label for="region" class="form-label">Region</label>
-            <select name="region" id="region" class="form-control">
-                <option value="all" {% if selected_region == 'all' %}selected{% endif %}>All</option>
-                {% for region in all_regions %}
-                    <option value="{{ region }}" {% if selected_region == region %}selected{% endif %}>{{ region }}</option>
-                {% endfor %}
-            </select>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i class="fas fa-thumbs-up fa-2x text-info"></i>
+                    </div>
+                    <h3 class="mb-1 text-info">{{ approved }}</h3>
+                    <p class="text-muted mb-0">Approved</p>
+                    <small class="text-muted">{{ approved|floatformat:1 }}% of total</small>
+                </div>
+            </div>
         </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-primary w-100">Filter</button>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i class="fas fa-times-circle fa-2x text-danger"></i>
+                    </div>
+                    <h3 class="mb-1 text-danger">{{ rejected }}</h3>
+                    <p class="text-muted mb-0">Rejected</p>
+                    <small class="text-muted">{{ rejected|floatformat:1 }}% of total</small>
+                </div>
+            </div>
         </div>
-        <div class="col-md-2">
-            <a href="?{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}{% if selected_status %}status={{ selected_status }}&{% endif %}{% if selected_region %}region={{ selected_region }}&{% endif %}export=csv" class="btn btn-success w-100">Export CSV</a>
+        <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="d-flex align-items-center justify-content-center mb-2">
+                        <i class="fas fa-dollar-sign fa-2x text-success"></i>
+                    </div>
+                    <h3 class="mb-1 text-success">{{ total_value|floatformat:0 }}</h3>
+                    <p class="text-muted mb-0">Total Value (SLS)</p>
+                    <small class="text-muted">Average: {{ avg_value|floatformat:0 }}</small>
+                </div>
+            </div>
         </div>
-    </form>
-    <!-- Table -->
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover">
-            <thead class="table-light">
-                <tr>
-                    <th>Transaction Ref</th>
-                    <th>Buyer</th>
-                    <th>Seller</th>
-                    <th>Land Code</th>
-                    <th>Status</th>
-                    <th>Region</th>
-                    <th>Register Date</th>
-                    <th>Sale Price</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for reg in registrations %}
-                <tr>
-                    <td>{{ reg.transaction_reference }}</td>
-                    <td>{{ reg.buyer_full_name }}</td>
-                    <td>{{ reg.seller_full_name }}</td>
-                    <td>{{ reg.land_code }}</td>
-                    <td>{{ reg.status|title }}</td>
-                    <td>{{ reg.land_region }}</td>
-                    <td>{{ reg.register_date }}</td>
-                    <td>{{ reg.sale_price }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="8" class="text-center">No registrations found for the selected filters.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie text-primary"></i> Status Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar text-primary"></i> Registrations by Region</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="regionChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-transparent border-0">
+            <h5 class="mb-0"><i class="fas fa-filter text-primary"></i> Advanced Filters</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-2">
+                    <label for="start_date" class="form-label">Start Date</label>
+                    <input type="date" name="start_date" id="start_date" class="form-control" value="{{ start_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="end_date" class="form-label">End Date</label>
+                    <input type="date" name="end_date" id="end_date" class="form-control" value="{{ end_date }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-control">
+                        <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All Statuses</option>
+                        <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="approved" {% if selected_status == 'approved' %}selected{% endif %}>Approved</option>
+                        <option value="completed" {% if selected_status == 'completed' %}selected{% endif %}>Completed</option>
+                        <option value="rejected" {% if selected_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="region" class="form-label">Region</label>
+                    <select name="region" id="region" class="form-control">
+                        <option value="all" {% if selected_region == 'all' %}selected{% endif %}>All Regions</option>
+                        {% for region in all_regions %}
+                            <option value="{{ region }}" {% if selected_region == region %}selected{% endif %}>{{ region }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Apply Filters
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <a href="{% url 'land_management:report' %}" class="btn btn-outline-secondary w-100">
+                        <i class="fas fa-undo"></i> Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Data Table Section -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-table text-primary"></i> Registration Details</h5>
+            <div class="d-flex gap-2">
+                <span class="badge bg-primary">{{ registrations|length }} records</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="reportTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Transaction Ref</th>
+                            <th>Buyer</th>
+                            <th>Seller</th>
+                            <th>Land Code</th>
+                            <th>Status</th>
+                            <th>Region</th>
+                            <th>Register Date</th>
+                            <th>Sale Price (SLS)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reg in registrations %}
+                        <tr>
+                            <td><span class="badge bg-light text-dark">{{ reg.transaction_reference }}</span></td>
+                            <td>{{ reg.buyer_full_name }}</td>
+                            <td>{{ reg.seller_full_name }}</td>
+                            <td><code>{{ reg.land_code }}</code></td>
+                            <td>
+                                {% if reg.status == 'completed' %}
+                                    <span class="badge bg-success">Completed</span>
+                                {% elif reg.status == 'approved' %}
+                                    <span class="badge bg-info">Approved</span>
+                                {% elif reg.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                {% elif reg.status == 'rejected' %}
+                                    <span class="badge bg-danger">Rejected</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ reg.land_region }}</td>
+                            <td>{{ reg.register_date|date:"M d, Y" }}</td>
+                            <td class="text-end">{{ reg.sale_price|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No registrations found for the selected filters.</p>
+                                <a href="{% url 'land_management:report' %}" class="btn btn-outline-primary">Clear Filters</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Status Distribution Chart
+const statusCtx = document.getElementById('statusChart').getContext('2d');
+const statusChart = new Chart(statusCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Completed', 'Pending', 'Approved', 'Rejected'],
+        datasets: [{
+            data: [{{ completed }}, {{ pending }}, {{ approved }}, {{ rejected }}],
+            backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#dc3545'],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Region Distribution Chart
+const regionCtx = document.getElementById('regionChart').getContext('2d');
+const regionChart = new Chart(regionCtx, {
+    type: 'bar',
+    data: {
+        labels: [{% for region in all_regions %}'{{ region }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Registrations',
+            data: [{% for region in all_regions %}{{ region_count|default:0 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: 'rgba(54, 162, 235, 0.8)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// Auto-refresh data every 30 seconds
+setInterval(function() {
+    location.reload();
+}, 30000);
+</script>
 {% endblock %} 

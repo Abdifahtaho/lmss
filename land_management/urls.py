@@ -9,8 +9,16 @@ urlpatterns = [
     path('login/', auth_views.LoginView.as_view(template_name='land_management/general/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='land_management:login'), name='logout'),
     
+    # User Profile & Management
+    path('profile/', views.profile, name='profile'),
+    path('profile/change-password/', views.change_password, name='change_password'),
+    path('users/', views.user_list, name='user_list'),
+    path('users/<int:user_id>/edit/', views.user_edit, name='user_edit'),
+    path('users/<int:user_id>/reset-password/', views.user_reset_password, name='user_reset_password'),
+
     # Application URLs
-    path('', views.dashboard, name='dashboard'),
+    path('', auth_views.LoginView.as_view(template_name='land_management/general/login.html'), name='login'),
+    path('dashboard/', views.dashboard, name='dashboard'),
     path('register/', views.land_registration, name='land_registration'),
     path('register/<int:registration_id>/', views.land_registration, name='edit_land_registration'),
     path('registration/<int:registration_id>/', views.registration_detail, name='registration_detail'),

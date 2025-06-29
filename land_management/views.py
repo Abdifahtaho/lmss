@@ -21,14 +21,20 @@ from .forms import (
     DirectorApprovalForm,
     SecretaryApprovalForm,
     DeputyMayorApprovalForm,
-    MayorApprovalForm
+    MayorApprovalForm,
+    ProfileForm,
+    UserEditForm
 )
 from django.urls import reverse
 from django.utils import timezone
 import uuid
 from datetime import datetime, timedelta
-from django.db.models import Count
+from django.db.models import Count, Sum, Avg
 import csv
+from django.contrib.auth.models import User
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.admin.views.decorators import staff_member_required
 
 @login_required
 def dashboard(request):
@@ -328,21 +334,33 @@ def approval_process(request, registration_id):
     except Approval.DoesNotExist:
         approval_instance = Approval.objects.create(land_registration=registration)
 
-    # START OF BLOCK TO BE COMMENTED OUT (FOR APPROVER REDIRECTION)
-    # if approval_instance.return_step and approval_instance.director_status != 'pending':
-    #     messages.info(request, f'This registration was returned for correction at the {approval_instance.return_step} step. Reason: {approval_instance.rejection_reason}')
-    #     # Redirect to the appropriate step
-    #     if approval_instance.return_step == 'registration':
-    #         return redirect('land_management:land_registration')
-    #     elif approval_instance.return_step == 'survey_payment':
-    #         return redirect('land_management:survey_payment', registration_id=registration.id)
-    #     elif approval_instance.return_step == 'land_survey':
-    #         return redirect('land_management:land_survey', registration_id=registration.id)
-    #     elif approval_instance.return_step == 'tax_payment':
-    #         return redirect('land_management:tax_payment', registration_id=registration.id)
-    #     elif approval_instance.return_step == 'land_mapping':
-    #         return redirect('land_management:land_mapping', registration_id=registration.id)
-    # END OF BLOCK TO BE COMMENTED OUT
+    # Validation: Check for all required steps and fields before proceeding with approval
+    required_fields = ['buyer_full_name', 'seller_full_name', 'land_code']
+    missing_fields = [field for field in required_fields if not getattr(registration, field, None)]
+    if missing_fields:
+        messages.error(request, f"Missing required registration fields: {', '.join(missing_fields)}. Please complete the registration.")
+        return redirect('land_management:land_registration', registration_id=registration.id)
+
+    survey_payment = getattr(registration, 'surveypayment', None)
+    land_survey = getattr(registration, 'landsurvey', None)
+    tax_payment = getattr(registration, 'taxpayment', None)
+    land_mapping = getattr(registration, 'landmapping', None)
+
+    if not survey_payment:
+        messages.error(request, "Survey payment is missing. Please complete the survey payment before proceeding with approval.")
+        return redirect('land_management:survey_payment', registration_id=registration.id)
+
+    if not land_survey:
+        messages.error(request, "Land survey is missing. Please complete the land survey before proceeding with approval.")
+        return redirect('land_management:land_survey', registration_id=registration.id)
+
+    if not tax_payment:
+        messages.error(request, "Tax payment is missing. Please complete the tax payment before proceeding with approval.")
+        return redirect('land_management:tax_payment', registration_id=registration.id)
+
+    if not land_mapping:
+        messages.error(request, "Land mapping is missing. Please complete the land mapping before proceeding with approval.")
+        return redirect('land_management:land_mapping', registration_id=registration.id)
 
     current_level = approval_instance.current_approval_level
     form = None
@@ -513,14 +531,36 @@ def approval_process(request, registration_id):
                 'land_mapping': land_mapping,
             })
     else: # GET request
+        user_full_name = request.user.get_full_name() or request.user.username
+        user_email = request.user.email
         if current_level == 'director_pending':
-            form = DirectorApprovalForm(instance=approval_instance)
+            initial = {
+                'director_full_name': user_full_name,
+                'director_email': user_email,
+                'director_title': 'Director',
+            }
+            form = DirectorApprovalForm(instance=approval_instance, initial=initial)
         elif current_level == 'secretary_pending' and approval_instance.director_status == 'approved':
-            form = SecretaryApprovalForm(instance=approval_instance)
+            initial = {
+                'secretary_full_name': user_full_name,
+                'secretary_email': user_email,
+                'secretary_title': 'Secretary',
+            }
+            form = SecretaryApprovalForm(instance=approval_instance, initial=initial)
         elif current_level == 'deputy_mayor_pending' and approval_instance.secretary_status == 'approved':
-            form = DeputyMayorApprovalForm(instance=approval_instance)
+            initial = {
+                'deputy_mayor_full_name': user_full_name,
+                'deputy_mayor_email': user_email,
+                'deputy_mayor_title': 'Deputy Mayor',
+            }
+            form = DeputyMayorApprovalForm(instance=approval_instance, initial=initial)
         elif current_level == 'mayor_pending' and approval_instance.deputy_mayor_status == 'approved':
-            form = MayorApprovalForm(instance=approval_instance)
+            initial = {
+                'mayor_full_name': user_full_name,
+                'mayor_email': user_email,
+                'mayor_title': 'Mayor',
+            }
+            form = MayorApprovalForm(instance=approval_instance, initial=initial)
         else:
             messages.info(request, f'Approval process is at: {current_level.replace("_", " ").title()}')
             return render(request, template_name, {
@@ -813,33 +853,242 @@ def report(request):
     if region and region != 'all':
         registrations = registrations.filter(land_region__icontains=region)
 
-    # Export to CSV
-    if request.GET.get('export') == 'csv':
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="registrations_report.csv"'
-        writer = csv.writer(response)
-        writer.writerow(['Transaction Ref', 'Buyer', 'Seller', 'Land Code', 'Status', 'Region', 'Register Date', 'Sale Price'])
-        for reg in registrations:
-            writer.writerow([
-                reg.transaction_reference,
-                reg.buyer_full_name,
-                reg.seller_full_name,
-                reg.land_code,
-                reg.status,
-                reg.land_region,
-                reg.register_date,
-                reg.sale_price
-            ])
-        return response
-
-    # Summary stats
+    # Summary stats - Define these before Excel export
     total = registrations.count()
     completed = registrations.filter(status='completed').count()
     pending = registrations.filter(status='pending').count()
     approved = registrations.filter(status='approved').count()
     rejected = registrations.filter(status='rejected').count()
 
+    # Calculate total and average values
+    total_value = registrations.aggregate(total=Sum('sale_price'))['total'] or 0
+    avg_value = registrations.aggregate(avg=Avg('sale_price'))['avg'] or 0
+
+    # Get region counts for chart
+    region_counts = registrations.values('land_region').annotate(count=Count('id')).order_by('-count')
+
     all_regions = LandRegistration.objects.values_list('land_region', flat=True).distinct()
+
+    # Export to Excel (enhanced: summary, charts, conditional formatting, flags, filters)
+    if request.GET.get('export') == 'excel':
+        try:
+            from openpyxl import Workbook
+            from openpyxl.styles import Font, PatternFill
+            from openpyxl.utils import get_column_letter
+            from openpyxl.worksheet.table import Table, TableStyleInfo
+            from openpyxl.formatting.rule import ColorScaleRule, CellIsRule
+            wb = Workbook()
+            # Remove default sheet
+            wb.remove(wb.active)
+
+            # 1. Summary Sheet
+            summary = wb.create_sheet('Summary & Charts')
+            summary['A1'] = 'LAND MANAGEMENT SYSTEM - REPORT SUMMARY'
+            summary['A1'].font = Font(size=16, bold=True)
+            summary['A3'] = f'Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}'
+            # Key metrics
+            total = registrations.count()
+            completed = registrations.filter(status='completed').count()
+            pending = registrations.filter(status='pending').count()
+            approved = registrations.filter(status='approved').count()
+            rejected = registrations.filter(status='rejected').count()
+            total_income = sum([(getattr(r, 'surveypayment', None).payment_amount or 0) + (getattr(r, 'taxpayment', None).tax_price or 0) for r in registrations])
+            summary['A5'] = 'Total Registrations:'
+            summary['B5'] = total
+            summary['A6'] = 'Completed:'
+            summary['B6'] = completed
+            summary['A7'] = 'Pending:'
+            summary['B7'] = pending
+            summary['A8'] = 'Approved:'
+            summary['B8'] = approved
+            summary['A9'] = 'Rejected:'
+            summary['B9'] = rejected
+            summary['A10'] = 'Total Income:'
+            summary['B10'] = total_income
+            # Status distribution chart data
+            chart_data = [
+                ['Status', 'Count'],
+                ['Completed', completed],
+                ['Pending', pending],
+                ['Approved', approved],
+                ['Rejected', rejected],
+            ]
+            for i, row in enumerate(chart_data, 12):
+                summary.append(row) if i == 12 else summary.append(row)
+            # (Optional: Add chart code here if you want to use openpyxl's charting)
+
+            # 2. Data Sheet
+            ws = wb.create_sheet('Detailed Data')
+            headers = [
+                'Transaction Ref', 'Buyer', 'Seller', 'Land Code', 'Status', 'Region', 'Register Date',
+                'Survey Payment Date', 'Survey Payment Amount',
+                'Tax Payment Date', 'Tax Payment Amount',
+                'Total Income',
+                'Land Survey Date', 'Land Mapping Date',
+                'Director Approval Date', 'Secretary Approval Date', 'Deputy Mayor Approval Date', 'Mayor Approval Date',
+                'Total Days', 'Efficiency (%)', 'Attention Needed'
+            ]
+            for col_idx, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col_idx, value=header)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+            # Data rows
+            row_idx = 2
+            for reg in registrations:
+                survey_payment = getattr(reg, 'surveypayment', None)
+                tax_payment = getattr(reg, 'taxpayment', None)
+                land_survey = getattr(reg, 'landsurvey', None)
+                land_mapping = getattr(reg, 'landmapping', None)
+                approval = getattr(reg, 'approval', None)
+                reg_date = reg.register_date.strftime('%Y-%m-%d') if reg.register_date else ''
+                survey_payment_date = survey_payment.payment_date.strftime('%Y-%m-%d') if survey_payment and survey_payment.payment_date else ''
+                tax_payment_date = tax_payment.payment_date.strftime('%Y-%m-%d') if tax_payment and tax_payment.payment_date else ''
+                land_survey_date = land_survey.survey_date.strftime('%Y-%m-%d') if land_survey and land_survey.survey_date else ''
+                land_mapping_date = land_mapping.mapping_date.strftime('%Y-%m-%d') if land_mapping and land_mapping.mapping_date else ''
+                director_approval_date = approval.director_approval_date.strftime('%Y-%m-%d') if approval and approval.director_approval_date else ''
+                secretary_approval_date = approval.secretary_approval_date.strftime('%Y-%m-%d') if approval and approval.secretary_approval_date else ''
+                deputy_mayor_approval_date = approval.deputy_mayor_approval_date.strftime('%Y-%m-%d') if approval and approval.deputy_mayor_approval_date else ''
+                mayor_approval_date = approval.mayor_approval_date.strftime('%Y-%m-%d') if approval and approval.mayor_approval_date else ''
+                survey_payment_amount = float(survey_payment.payment_amount) if survey_payment and survey_payment.payment_amount else 0
+                tax_payment_amount = float(tax_payment.tax_price) if tax_payment and tax_payment.tax_price else 0
+                total_income = survey_payment_amount + tax_payment_amount
+                total_days = ''
+                if reg.register_date and approval and approval.mayor_approval_date:
+                    total_days = (approval.mayor_approval_date.date() - reg.register_date).days
+                efficiency = ''
+                if total_days != '' and total_days > 0:
+                    expected_days = 30
+                    efficiency = min(100, round((expected_days / total_days) * 100, 1))
+                # Attention Needed: flag if pending and more than 30 days
+                attention = ''
+                if reg.status == 'pending' and reg.register_date:
+                    days_since = (datetime.now().date() - reg.register_date).days
+                    if days_since > 30:
+                        attention = 'YES'
+                ws.cell(row=row_idx, column=1, value=reg.transaction_reference)
+                ws.cell(row=row_idx, column=2, value=reg.buyer_full_name)
+                ws.cell(row=row_idx, column=3, value=reg.seller_full_name)
+                ws.cell(row=row_idx, column=4, value=reg.land_code)
+                ws.cell(row=row_idx, column=5, value=reg.status)
+                ws.cell(row=row_idx, column=6, value=reg.land_region)
+                ws.cell(row=row_idx, column=7, value=reg_date)
+                ws.cell(row=row_idx, column=8, value=survey_payment_date)
+                ws.cell(row=row_idx, column=9, value=survey_payment_amount)
+                ws.cell(row=row_idx, column=10, value=tax_payment_date)
+                ws.cell(row=row_idx, column=11, value=tax_payment_amount)
+                ws.cell(row=row_idx, column=12, value=total_income)
+                ws.cell(row=row_idx, column=13, value=land_survey_date)
+                ws.cell(row=row_idx, column=14, value=land_mapping_date)
+                ws.cell(row=row_idx, column=15, value=director_approval_date)
+                ws.cell(row=row_idx, column=16, value=secretary_approval_date)
+                ws.cell(row=row_idx, column=17, value=deputy_mayor_approval_date)
+                ws.cell(row=row_idx, column=18, value=mayor_approval_date)
+                ws.cell(row=row_idx, column=19, value=total_days)
+                ws.cell(row=row_idx, column=20, value=efficiency)
+                ws.cell(row=row_idx, column=21, value=attention)
+                row_idx += 1
+            # Auto-adjust column widths
+            for column in ws.columns:
+                max_length = 0
+                column_letter = column[0].column_letter
+                for cell in column:
+                    try:
+                        if len(str(cell.value)) > max_length:
+                            max_length = len(str(cell.value))
+                    except:
+                        pass
+                adjusted_width = min(max_length + 2, 50)
+                ws.column_dimensions[column_letter].width = adjusted_width
+            # Add filter to all columns
+            ws.auto_filter.ref = ws.dimensions
+            # Conditional formatting: highlight low efficiency and attention needed
+            ws.conditional_formatting.add(f'T2:T{row_idx}', ColorScaleRule(start_type='min', start_color='FFEE1111', end_type='max', end_color='FF11EE11'))
+            ws.conditional_formatting.add(f'U2:U{row_idx}', CellIsRule(operator='equal', formula=['"YES"'], fill=PatternFill(start_color='FFFF0000', end_color='FFFF0000', fill_type='solid')))
+            response = HttpResponse(
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            )
+            response['Content-Disposition'] = f'attachment; filename="registrations_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"'
+            wb.save(response)
+            return response
+        except ImportError:
+            messages.error(request, 'Excel export requires openpyxl. Please install it.')
+            return redirect('land_management:report')
+    
+    # Fallback CSV export function
+    def export_csv(request, registrations, total, completed, pending, approved, rejected, total_value, avg_value, region_counts, all_regions, status, region, start_date, end_date):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="land_management_report_{}.csv"'.format(datetime.now().strftime('%Y%m%d_%H%M%S'))
+        response.write(u'\ufeff'.encode('utf8'))
+        writer = csv.writer(response)
+        
+        writer.writerow(['LAND MANAGEMENT SYSTEM - COMPREHENSIVE REPORT'])
+        writer.writerow(['Generated on:', datetime.now().strftime('%Y-%m-%d %H:%M:%S')])
+        writer.writerow([''])
+        writer.writerow(['SUMMARY STATISTICS'])
+        writer.writerow(['Total Registrations', total])
+        writer.writerow(['Completed', completed, f"{completed/total*100:.1f}%" if total > 0 else "0%"])
+        writer.writerow(['Pending', pending, f"{pending/total*100:.1f}%" if total > 0 else "0%"])
+        writer.writerow(['Approved', approved, f"{approved/total*100:.1f}%" if total > 0 else "0%"])
+        writer.writerow(['Rejected', rejected, f"{rejected/total*100:.1f}%" if total > 0 else "0%"])
+        writer.writerow(['Total Revenue (SLS)', f"{total_value:,.2f}"])
+        writer.writerow(['Average Sale Price (SLS)', f"{avg_value:,.2f}"])
+        writer.writerow([''])
+        writer.writerow(['REGION BREAKDOWN'])
+        for region_data in region_counts:
+            writer.writerow([region_data['land_region'], region_data['count']])
+        writer.writerow([''])
+        writer.writerow(['DETAILED REGISTRATION DATA'])
+        
+        # Enhanced headers
+        writer.writerow([
+            'Transaction Reference', 'Registration Date', 'Buyer Name', 'Seller Name',
+            'Land Code', 'Land Region', 'Sale Price (SLS)', 'Status', 'Current Step',
+            'Survey Payment Status', 'Tax Payment Status', 'Processing Days', 'Efficiency (%)'
+        ])
+        
+        for reg in registrations:
+            survey_payment = getattr(reg, 'surveypayment', None)
+            tax_payment = getattr(reg, 'taxpayment', None)
+            
+            # Calculate processing days
+            processing_days = 0
+            if reg.register_date:
+                processing_days = (datetime.now().date() - reg.register_date).days
+            
+            # Calculate efficiency
+            efficiency = 0
+            if reg.status == 'completed':
+                efficiency = 100
+            elif reg.status == 'approved':
+                efficiency = 75
+            elif reg.status == 'pending':
+                if getattr(reg, 'landmapping', None):
+                    efficiency = 60
+                elif getattr(reg, 'landsurvey', None):
+                    efficiency = 40
+                elif tax_payment:
+                    efficiency = 30
+                elif survey_payment:
+                    efficiency = 20
+                else:
+                    efficiency = 10
+            
+            writer.writerow([
+                reg.transaction_reference,
+                reg.register_date.strftime('%Y-%m-%d') if reg.register_date else '',
+                reg.buyer_full_name,
+                reg.seller_full_name,
+                reg.land_code,
+                reg.land_region,
+                "{:.2f}".format(reg.sale_price) if reg.sale_price is not None else '',
+                reg.status.title(),
+                reg.current_step,
+                survey_payment.payment_status if survey_payment else 'Not Started',
+                tax_payment.payment_status if tax_payment else 'Not Started',
+                processing_days,
+                "{:.1f}".format(efficiency)
+            ])
+        return response
 
     context = {
         'registrations': registrations,
@@ -848,6 +1097,9 @@ def report(request):
         'pending': pending,
         'approved': approved,
         'rejected': rejected,
+        'total_value': total_value,
+        'avg_value': avg_value,
+        'region_counts': region_counts,
         'all_regions': all_regions,
         'selected_status': status or 'all',
         'selected_region': region or 'all',
@@ -855,3 +1107,68 @@ def report(request):
         'end_date': end_date or '',
     }
     return render(request, 'land_management/general/report.html', context)
+
+@login_required
+def profile(request):
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile updated successfully!')
+            return redirect('land_management:profile')
+    else:
+        form = ProfileForm(instance=request.user)
+    return render(request, 'land_management/general/profile.html', {'form': form})
+
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)  # Important!
+            messages.success(request, 'Your password was successfully updated!')
+            return redirect('land_management:profile')
+        else:
+            messages.error(request, 'Please correct the error below.')
+    else:
+        form = PasswordChangeForm(request.user)
+    return render(request, 'land_management/general/change_password.html', {'form': form})
+
+@staff_member_required
+def user_list(request):
+    users = User.objects.all()
+    return render(request, 'land_management/general/user_list.html', {'users': users})
+
+@staff_member_required
+def user_edit(request, user_id):
+    user = get_object_or_404(User, pk=user_id)
+    if request.method == 'POST':
+        form = UserEditForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'User updated successfully!')
+            return redirect('land_management:user_list')
+    else:
+        form = UserEditForm(instance=user)
+    return render(request, 'land_management/general/user_edit.html', {'form': form, 'user_obj': user})
+
+@staff_member_required
+def user_reset_password(request, user_id):
+    user = get_object_or_404(User, pk=user_id)
+    if request.method == 'POST':
+        # Send password reset email
+        from django.contrib.auth.forms import PasswordResetForm
+        reset_form = PasswordResetForm({'email': user.email})
+        if reset_form.is_valid():
+            reset_form.save(
+                request=request,
+                use_https=request.is_secure(),
+                email_template_name='land_management/general/password_reset_email.html',
+                subject_template_name='land_management/general/password_reset_subject.txt',
+            )
+            messages.success(request, f'Password reset email sent to {user.email}')
+            return redirect('land_management:user_list')
+        else:
+            messages.error(request, 'Could not send reset email.')
+    return render(request, 'land_management/general/user_reset_password.html', {'user_obj': user})
