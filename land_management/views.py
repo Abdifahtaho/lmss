@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.http import HttpResponse
 from django.db.models import Q # Import Q for complex lookups
@@ -1172,3 +1172,35 @@ def user_reset_password(request, user_id):
         else:
             messages.error(request, 'Could not send reset email.')
     return render(request, 'land_management/general/user_reset_password.html', {'user_obj': user})
+
+@login_required
+def registration_list(request):
+    if request.user.is_staff:
+        registrations = LandRegistration.objects.all()
+    else:
+        registrations = LandRegistration.objects.filter(user=request.user)
+    return render(request, 'land_management/registrations/registration_list.html', {'registrations': registrations})
+
+@login_required
+def edit_land_registration(request, registration_id):
+    registration = LandRegistration.objects.get(pk=registration_id)
+    if not (request.user.is_staff or registration.user == request.user):
+        return redirect('land_management:registration_list')
+    if request.method == 'POST':
+        form = LandRegistrationForm(request.POST, request.FILES, instance=registration)
+        if form.is_valid():
+            form.save()
+            return redirect('land_management:registration_detail', registration_id=registration.id)
+    else:
+        form = LandRegistrationForm(instance=registration)
+    return render(request, 'land_management/registrations/land_registration.html', {'form': form, 'edit_mode': True, 'registration': registration})
+
+@login_required
+def delete_land_registration(request, registration_id):
+    registration = LandRegistration.objects.get(pk=registration_id)
+    if not (request.user.is_staff or registration.user == request.user):
+        return redirect('land_management:registration_list')
+    if request.method == 'POST':
+        registration.delete()
+        return redirect('land_management:registration_list')
+    return render(request, 'land_management/registrations/registration_confirm_delete.html', {'registration': registration})

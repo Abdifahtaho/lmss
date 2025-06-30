@@ -95,7 +95,15 @@
             <ul class="list-unstyled components">
                 <li class="text-uppercase text-muted small px-3 mt-2 mb-1">Main</li>
                 <li><a href="{% url 'land_management:dashboard' %}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
-                <li><a href="{% url 'land_management:land_registration' %}"><i class="fas fa-file-signature me-2"></i>New Registration</a></li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="registrationsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-file-signature me-2"></i>Registrations
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="registrationsDropdown">
+                        <li><a class="dropdown-item" href="{% url 'land_management:registration_list' %}"><i class="fas fa-list me-2"></i>All Registrations</a></li>
+                        <li><a class="dropdown-item" href="{% url 'land_management:land_registration' %}"><i class="fas fa-plus me-2"></i>New Registration</a></li>
+                    </ul>
+                </li>
                 <li><a href="{% url 'land_management:list_survey_payments' %}"><i class="fas fa-money-check-alt me-2"></i>Survey Payments</a></li>
                 <li><a href="{% url 'land_management:list_land_surveys' %}"><i class="fas fa-map-marked-alt me-2"></i>Land Surveys</a></li>
                 <li><a href="{% url 'land_management:list_tax_payments' %}"><i class="fas fa-calculator me-2"></i>Tax Payments</a></li>

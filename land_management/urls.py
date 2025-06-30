@@ -39,4 +39,7 @@ urlpatterns = [
     path('certificate/<int:registration_id>/', views.generate_certificate, name='generate_certificate'),
     path('certificate/<int:registration_id>/download/', views.download_certificate_pdf, name='download_certificate_pdf'),
     path('reports/', views.report, name='report'),
+    path('registrations/', views.registration_list, name='registration_list'),
+    path('registrations/<int:registration_id>/edit/', views.edit_land_registration, name='edit_land_registration'),
+    path('registrations/<int:registration_id>/delete/', views.delete_land_registration, name='delete_land_registration'),
 ] 
