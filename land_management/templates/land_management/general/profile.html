@@ -20,6 +20,27 @@
             <p class="text-gray-500 text-sm">{{ request.user.email }}</p>
         </div>
         <hr class="mb-6">
+        <!-- Profile Details Section -->
+        <div class="mb-6 bg-indigo-50 rounded-lg p-4 shadow-inner border border-indigo-100">
+            <h3 class="text-lg font-semibold text-indigo-700 mb-2 flex items-center gap-2">
+                <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                Profile Details
+            </h3>
+            <ul class="text-gray-700 text-sm space-y-2">
+                <li><span class="font-semibold text-indigo-600">Username:</span> {{ request.user.username }}</li>
+                <li><span class="font-semibold text-indigo-600">Email:</span> {{ request.user.email }}</li>
+                <li><span class="font-semibold text-indigo-600">First Name:</span> {{ request.user.first_name }}</li>
+                <li><span class="font-semibold text-indigo-600">Last Name:</span> {{ request.user.last_name }}</li>
+                <li><span class="font-semibold text-indigo-600">Date Joined:</span> {{ request.user.date_joined|date:'M d, Y H:i' }}</li>
+                <li><span class="font-semibold text-indigo-600">Last Login:</span> {{ request.user.last_login|date:'M d, Y H:i' }}</li>
+            </ul>
+        </div>
+        <!-- End Profile Details Section -->
+        {% if request.user.is_staff or request.user.is_superuser %}
+        <div class="mb-6 flex justify-end">
+            <a href="{% url 'land_management:user_list' %}" class="inline-block bg-indigo-600 hover:bg-indigo-800 text-white font-semibold py-2 px-6 rounded-lg shadow transition">User Management</a>
+        </div>
+        {% endif %}
         <h3 class="text-lg font-semibold text-indigo-700 mb-4">Edit Profile</h3>
         {% if messages %}
             <div class="mb-4">
@@ -32,7 +53,9 @@
         {% endif %}
         <form method="post" class="space-y-5">
             {% csrf_token %}
-            {{ form|crispy }}
+            <div class="space-y-4">
+                {{ form|crispy }}
+            </div>
             <div class="flex justify-between items-center mt-8">
                 <a href="{% url 'land_management:change_password' %}" class="text-indigo-600 hover:underline font-medium">Change Password</a>
                 <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-8 rounded-lg shadow transition">Save Changes</button>

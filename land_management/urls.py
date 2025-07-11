@@ -15,6 +15,7 @@ urlpatterns = [
     path('users/', views.user_list, name='user_list'),
     path('users/<int:user_id>/edit/', views.user_edit, name='user_edit'),
     path('users/<int:user_id>/reset-password/', views.user_reset_password, name='user_reset_password'),
+    path('users/create/', views.create_user, name='user_create'),
 
     # Application URLs
     path('', auth_views.LoginView.as_view(template_name='land_management/general/login.html'), name='login'),
@@ -42,4 +43,20 @@ urlpatterns = [
     path('registrations/', views.registration_list, name='registration_list'),
     path('registrations/<int:registration_id>/edit/', views.edit_land_registration, name='edit_land_registration'),
     path('registrations/<int:registration_id>/delete/', views.delete_land_registration, name='delete_land_registration'),
+    path('password-reset/', auth_views.PasswordResetView.as_view(
+        template_name='land_management/general/password_reset_form.html',
+        email_template_name='land_management/general/password_reset_email.html',
+        subject_template_name='land_management/general/password_reset_subject.txt',
+        success_url='done/'
+    ), name='password_reset'),
+    path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(
+        template_name='land_management/general/password_reset_done.html'
+    ), name='password_reset_done'),
+    path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(
+        template_name='land_management/general/password_reset_confirm.html',
+        success_url='/password-reset/complete/'
+    ), name='password_reset_confirm'),
+    path('password-reset/complete/', auth_views.PasswordResetCompleteView.as_view(
+        template_name='land_management/general/password_reset_complete.html'
+    ), name='password_reset_complete'),
 ] 

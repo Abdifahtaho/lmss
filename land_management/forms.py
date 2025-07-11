@@ -8,6 +8,7 @@ from .models import (
     LandMapping,
     Approval
 )
+from django.core.exceptions import ValidationError
 
 class LandRegistrationForm(forms.ModelForm):
     class Meta:
@@ -29,7 +30,7 @@ class LandRegistrationForm(forms.ModelForm):
             
             # Land Information
             'land_code': forms.TextInput(attrs={'class': 'form-control'}),
-            'land_size': forms.Select(attrs={'class': 'form-control'}),
+            'land_size': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 6x12, 12/24, etc.'}),
             'size_unit': forms.Select(attrs={'class': 'form-control'}, choices=[
                 ('sqm', 'Square Meters'),
                 ('hectares', 'Hectares'),
@@ -58,15 +59,6 @@ class LandRegistrationForm(forms.ModelForm):
             'documents': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Add custom choices for land size
-        self.fields['land_size'].choices = [
-            ('6x12', '6x12'),
-            ('9x12', '9x12'),
-            ('custom', 'Custom'),
-        ]
-
 class SurveyPaymentForm(forms.ModelForm):
     class Meta:
         model = SurveyPayment
@@ -83,7 +75,7 @@ class SurveyPaymentForm(forms.ModelForm):
 class LandSurveyForm(forms.ModelForm):
     class Meta:
         model = LandSurvey
-        exclude = ['land_registration', 'date_created']
+        exclude = ['land_registration', 'date_created', 'coordinates']
         widgets = {
             'survey_number': forms.TextInput(attrs={'class': 'form-control'}),
             'parcel_number': forms.TextInput(attrs={'class': 'form-control'}),
@@ -92,10 +84,32 @@ class LandSurveyForm(forms.ModelForm):
             'survey_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'surveyor_name': forms.TextInput(attrs={'class': 'form-control'}),
             'survey_location': forms.TextInput(attrs={'class': 'form-control'}),
-            'coordinates': forms.TextInput(attrs={'class': 'form-control'}),
             'survey_documents': forms.FileInput(attrs={'class': 'form-control'}),
             'land_direction': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        survey_number = cleaned_data.get('survey_number')
+        parcel_number = cleaned_data.get('parcel_number')
+
+        # Check for duplicate survey_number
+        if survey_number:
+            qs = LandSurvey.objects.filter(survey_number=survey_number)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                self.add_error('survey_number', 'A survey with this number already exists.')
+
+        # Check for duplicate parcel_number
+        if parcel_number:
+            qs = LandSurvey.objects.filter(parcel_number=parcel_number)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                self.add_error('parcel_number', 'A survey with this parcel number already exists.')
+
+        return cleaned_data
 
 class TaxPaymentForm(forms.ModelForm):
     class Meta:
@@ -295,4 +309,12 @@ class UserEditForm(forms.ModelForm):
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
-        } 
+        }
+
+class UserCreateForm(forms.ModelForm):
+    password = forms.CharField(widget=forms.PasswordInput)
+    is_staff = forms.BooleanField(required=False, initial=True, label='Staff status (admin access)')
+    is_superuser = forms.BooleanField(required=False, initial=True, label='Superuser status (full admin)')
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password', 'first_name', 'last_name', 'is_staff', 'is_superuser'] 

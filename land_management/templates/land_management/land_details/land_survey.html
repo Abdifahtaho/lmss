@@ -58,7 +58,7 @@
                                         {% endif %}
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="{{ form.parcel_number.id_for_label }}" class="form-label">Parcel Number</label>
+                                        <label for="{{ form.parcel_number.id_for_label }}" class="form-label">face Number</label>
                                         {{ form.parcel_number }}
                                         {% if form.parcel_number.errors %}
                                             <div class="invalid-feedback d-block">{{ form.parcel_number.errors }}</div>
@@ -99,13 +99,13 @@
                                             <div class="invalid-feedback d-block">{{ form.survey_location.errors }}</div>
                                         {% endif %}
                                     </div>
-                                    <div class="col-md-6 mb-3">
+                                    {% comment %} <div class="col-md-6 mb-3">
                                         <label for="{{ form.coordinates.id_for_label }}" class="form-label">Coordinates</label>
                                         {{ form.coordinates }}
                                         {% if form.coordinates.errors %}
                                             <div class="invalid-feedback d-block">{{ form.coordinates.errors }}</div>
                                         {% endif %}
-                                    </div>
+                                    </div> {% endcomment %}
                                     <div class="col-md-6 mb-3">
                                         <label for="{{ form.survey_documents.id_for_label }}" class="form-label">Survey Documents</label>
                                         {{ form.survey_documents }}

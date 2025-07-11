@@ -1,6 +1,22 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import FileExtensionValidator
+import re
+from django.core.exceptions import ValidationError
+
+# Custom Validators
+
+def validate_national_id(value):
+    if not re.match(r'^[0-9]{6,20}$', value):
+        raise ValidationError('National ID must be 6-20 digits.')
+
+def validate_phone_number(value):
+    if not re.match(r'^\+?[0-9]{7,15}$', value):
+        raise ValidationError('Phone number must be 7-15 digits and may start with +.')
+
+def validate_alpha_name(value):
+    if not re.match(r'^[A-Za-z ]+$', value):
+        raise ValidationError('Name must contain only letters and spaces.')
 
 class LandRegistration(models.Model):
     STATUS_CHOICES = [
@@ -35,21 +51,21 @@ class LandRegistration(models.Model):
     sale_price = models.DecimalField(max_digits=15, decimal_places=2)  # For SLS currency
     
     # Seller Information
-    seller_full_name = models.CharField(max_length=255)
-    seller_national_id = models.CharField(max_length=50)
+    seller_full_name = models.CharField(max_length=255, validators=[validate_alpha_name])
+    seller_national_id = models.CharField(max_length=50, validators=[validate_national_id])
     seller_birth_date = models.DateField()
-    seller_phone = models.CharField(max_length=20)
+    seller_phone = models.CharField(max_length=20, validators=[validate_phone_number])
     seller_address = models.TextField(blank=True, null=True)
     
     # Buyer Information
-    buyer_full_name = models.CharField(max_length=255)
-    buyer_national_id = models.CharField(max_length=50)
-    buyer_phone = models.CharField(max_length=20)
+    buyer_full_name = models.CharField(max_length=255, validators=[validate_alpha_name])
+    buyer_national_id = models.CharField(max_length=50, validators=[validate_national_id])
+    buyer_phone = models.CharField(max_length=20, validators=[validate_phone_number])
     buyer_address = models.TextField(blank=True, null=True)
     
     # Land Information
     land_code = models.CharField(max_length=20, unique=True)
-    land_size = models.CharField(max_length=10, choices=LAND_SIZE_CHOICES)
+    land_size = models.CharField(max_length=10)  # Allow any value
     size_unit = models.CharField(max_length=10, default='sqm', blank=True)
     land_zone = models.CharField(max_length=100)
     land_district = models.CharField(max_length=100)
@@ -83,6 +99,11 @@ class LandRegistration(models.Model):
     def __str__(self):
         return f"Land Registration - {self.transaction_reference}"
 
+    def clean(self):
+        super().clean()
+        if self.seller_national_id == self.buyer_national_id:
+            raise ValidationError('Seller and buyer cannot have the same national ID.')
+
 class SurveyPayment(models.Model):
     PAYMENT_STATUS = [
         ('pending', 'Pending'),
@@ -111,8 +132,8 @@ class SurveyPayment(models.Model):
 
 class LandSurvey(models.Model):
     land_registration = models.OneToOneField(LandRegistration, on_delete=models.CASCADE)
-    survey_number = models.CharField(max_length=50)
-    parcel_number = models.CharField(max_length=50)
+    survey_number = models.CharField(max_length=50, unique=True)
+    parcel_number = models.CharField(max_length=50, unique=True)
     land_code = models.CharField(max_length=50)
     owner_name = models.CharField(max_length=255)
     survey_date = models.DateField()

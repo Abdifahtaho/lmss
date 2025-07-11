@@ -23,7 +23,8 @@ from .forms import (
     DeputyMayorApprovalForm,
     MayorApprovalForm,
     ProfileForm,
-    UserEditForm
+    UserEditForm,
+    UserCreateForm
 )
 from django.urls import reverse
 from django.utils import timezone
@@ -237,6 +238,8 @@ def land_survey(request, registration_id):
         initial_data = {
             'land_code': registration.land_code,
             'owner_name': registration.buyer_full_name,
+            'surveyor_name': request.user.get_full_name() or request.user.username,
+            'survey_location': registration.land_region,
         }
         form = LandSurveyForm(instance=existing_survey, initial=initial_data)
 
@@ -420,6 +423,7 @@ def approval_process(request, registration_id):
             # Handle normal approval flow
             if current_level == 'director_pending':
                 if approval_instance.director_status == 'approved':
+                    approval_instance.director_approval_date = timezone.now()
                     approval_instance.current_approval_level = 'secretary_pending'
                     messages.success(request, 'Director approval submitted. Proceed to Secretary Approval.')
                 elif approval_instance.director_status == 'rejected':
@@ -441,6 +445,7 @@ def approval_process(request, registration_id):
 
             elif current_level == 'secretary_pending' and approval_instance.director_status == 'approved':
                 if approval_instance.secretary_status == 'approved':
+                    approval_instance.secretary_approval_date = timezone.now()
                     approval_instance.current_approval_level = 'deputy_mayor_pending'
                     messages.success(request, 'Secretary approval submitted. Proceed to Deputy Mayor Approval.')
                 elif approval_instance.secretary_status == 'rejected':
@@ -462,6 +467,7 @@ def approval_process(request, registration_id):
 
             elif current_level == 'deputy_mayor_pending' and approval_instance.secretary_status == 'approved':
                 if approval_instance.deputy_mayor_status == 'approved':
+                    approval_instance.deputy_mayor_approval_date = timezone.now()
                     approval_instance.current_approval_level = 'mayor_pending'
                     messages.success(request, 'Deputy Mayor approval submitted. Proceed to Mayor Approval.')
                 elif approval_instance.deputy_mayor_status == 'rejected':
@@ -483,6 +489,7 @@ def approval_process(request, registration_id):
 
             elif current_level == 'mayor_pending' and approval_instance.deputy_mayor_status == 'approved':
                 if approval_instance.mayor_status == 'approved':
+                    approval_instance.mayor_approval_date = timezone.now()
                     approval_instance.current_approval_level = 'completed'
                     registration.status = 'completed'
                     registration.current_step = 'certificate_generated'
@@ -892,7 +899,11 @@ def report(request):
             pending = registrations.filter(status='pending').count()
             approved = registrations.filter(status='approved').count()
             rejected = registrations.filter(status='rejected').count()
-            total_income = sum([(getattr(r, 'surveypayment', None).payment_amount or 0) + (getattr(r, 'taxpayment', None).tax_price or 0) for r in registrations])
+            total_income = sum([
+                (r.surveypayment.payment_amount if hasattr(r, 'surveypayment') and r.surveypayment and r.surveypayment.payment_amount else 0) +
+                (r.taxpayment.tax_price if hasattr(r, 'taxpayment') and r.taxpayment and r.taxpayment.tax_price else 0)
+                for r in registrations
+            ])
             summary['A5'] = 'Total Registrations:'
             summary['B5'] = total
             summary['A6'] = 'Completed:'
@@ -954,7 +965,7 @@ def report(request):
                 total_income = survey_payment_amount + tax_payment_amount
                 total_days = ''
                 if reg.register_date and approval and approval.mayor_approval_date:
-                    total_days = (approval.mayor_approval_date.date() - reg.register_date).days
+                    total_days = (approval.mayor_approval_date - reg.register_date).days
                 efficiency = ''
                 if total_days != '' and total_days > 0:
                     expected_days = 30
@@ -1108,6 +1119,7 @@ def report(request):
     }
     return render(request, 'land_management/general/report.html', context)
 
+@user_passes_test(lambda u: u.is_superuser)
 @login_required
 def profile(request):
     if request.method == 'POST':
@@ -1204,3 +1216,17 @@ def delete_land_registration(request, registration_id):
         registration.delete()
         return redirect('land_management:registration_list')
     return render(request, 'land_management/registrations/registration_confirm_delete.html', {'registration': registration})
+
+@user_passes_test(lambda u: u.is_superuser)
+def create_user(request):
+    if request.method == 'POST':
+        form = UserCreateForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.set_password(form.cleaned_data['password'])
+            user.save()
+            messages.success(request, 'Admin user created successfully!')
+            return redirect('land_management:user_list')
+    else:
+        form = UserCreateForm()
+    return render(request, 'land_management/general/user_create.html', {'form': form})

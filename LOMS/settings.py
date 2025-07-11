@@ -141,3 +141,18 @@ LOGOUT_REDIRECT_URL = 'land_management:login'
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
 CRISPY_TEMPLATE_PACK = "tailwind"
+
+# Email backend for sending real emails via Gmail SMTP
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'ibnucabdule@gmail.com'  # <-- Using your Gmail address
+EMAIL_HOST_PASSWORD = 'qfobhnbysvftenbz'  # Gmail App Password for ibnucabdule@gmail.com
+DEFAULT_FROM_EMAIL = 'Land Management System <ibnucabdule@gmail.com>'
+
+# To use Gmail SMTP, you must enable 2-Step Verification and create an App Password:
+# https://support.google.com/accounts/answer/185833?hl=en
+
+import certifi, os
+os.environ['SSL_CERT_FILE'] = certifi.where()

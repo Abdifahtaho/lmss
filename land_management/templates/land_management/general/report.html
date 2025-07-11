@@ -12,9 +12,6 @@
                     <p class="text-muted">Real-time analytics and insights for land registrations</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary" onclick="window.print()">
-                        <i class="fas fa-print"></i> Print Report
-                    </button>
                     <a href="?{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}{% if selected_status %}status={{ selected_status }}&{% endif %}{% if selected_region %}region={{ selected_region }}&{% endif %}export=excel" class="btn btn-success">
                         <i class="fas fa-download"></i> Export Excel
                     </a>

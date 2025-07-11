@@ -345,6 +345,33 @@
             // For now, we will just display a message or link if it's an image file.
             console.log("Existing map document found: " + existingMapDocument);
         }
+
+        // After map is initialized and centered, add this for view mode:
+        {% if land_mapping and land_mapping.map_coordinates %}
+        const savedCoords = "{{ land_mapping.map_coordinates }}".split(',');
+        const savedLat = parseFloat(savedCoords[0]);
+        const savedLng = parseFloat(savedCoords[1]);
+        const savedAddress = `{{ land_mapping.land_reference|escapejs }}`; // Or use another address field if available
+        if (!isNaN(savedLat) && !isNaN(savedLng)) {
+            const viewMarker = new google.maps.Marker({
+                position: { lat: savedLat, lng: savedLng },
+                map: map
+            });
+            const gmapsLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(savedAddress)}`;
+            const infoContent = `
+                <div>
+                    <strong>${savedAddress}</strong><br>
+                    <a href="${gmapsLink}" target="_blank">View on Google Maps</a>
+                </div>
+            `;
+            const infoWindow = new google.maps.InfoWindow({ content: infoContent });
+            viewMarker.addListener('click', function() {
+                infoWindow.open(map, viewMarker);
+            });
+            // Optionally open info window immediately
+            infoWindow.open(map, viewMarker);
+        }
+        {% endif %}
     }
 
     function addMarker(location) {

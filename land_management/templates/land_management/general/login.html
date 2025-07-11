@@ -1,4 +1,4 @@
-{% extends 'land_management/general/base.html' %}
+{% extends 'land_management/general/base_auth.html' %}
 {% load static %}
 
 {% block title %}Login - Land Management System{% endblock %}
@@ -147,7 +147,7 @@
                             <label class="form-check-label" for="rememberMe">Remember me</label>
                         </div>
                         <div class="mb-3 text-end">
-                            <a href="#" class="text-decoration-none" tabindex="0">Forgot password?</a>
+                            <a href="{% url 'land_management:password_reset' %}" class="text-decoration-none" tabindex="0">Forgot password?</a>
                         </div>
                         <input type="hidden" name="next" value="{{ next }}">
                         <div class="d-grid">

@@ -48,5 +48,8 @@
             </tbody>
         </table>
     </div>
+    {% if user.is_superuser %}
+    <a href="{% url 'land_management:user_create' %}" class="btn btn-success mb-3">Create New Admin User</a>
+    {% endif %}
 </div>
 {% endblock %} 
