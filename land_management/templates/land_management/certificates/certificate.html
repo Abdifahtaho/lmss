@@ -11,8 +11,11 @@
                 <div class="card-header">
                     <h3 class="card-title">Land Certificate</h3>
                     <div class="card-tools">
-                        <a href="{% url 'land_management:download_certificate_pdf' registration.id %}" class="btn btn-success">
-                            <i class="fas fa-download"></i> Printed
+                        <a href="#" class="btn btn-primary" id="print-certificate-btn">
+                            <i class="fas fa-print"></i> Print
+                        </a>
+                        <a href="{% url 'land_management:download_certificate_pdf' registration.id %}" class="btn btn-success" target="_blank">
+                            <i class="fas fa-download"></i> Download PDF
                         </a>
                     </div>
                 </div>
@@ -294,19 +297,12 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Trigger print dialog automatically when the page loads
-        window.print();
-
-        // Optional: Close the tab after printing (with a slight delay to allow dialog to appear)
-        setTimeout(function() {
-            window.close();
-        }, 500); // 500ms delay
-
-        const printButton = document.querySelector('a[href*="download_certificate_pdf"]');
+        // Only the print button triggers print
+        const printButton = document.getElementById('print-certificate-btn');
         if (printButton) {
             printButton.addEventListener('click', function(event) {
-                event.preventDefault(); // Prevent default link behavior
-                window.print(); // Trigger browser print dialog
+                event.preventDefault();
+                window.print();
             });
         }
     });

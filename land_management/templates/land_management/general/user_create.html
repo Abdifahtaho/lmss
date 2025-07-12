@@ -6,6 +6,20 @@
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
+        <div class="mb-3 d-flex align-items-center gap-2">
+            <label for="group" class="form-label me-2">Assign to Group</label>
+            <a href="/admin/auth/group/add/" target="_blank" class="btn btn-outline-primary btn-sm">Create New Group</a>
+        </div>
+        {% if groups %}
+            <select name="group" id="group" class="form-control">
+                <option value="">-- Select Group --</option>
+                {% for group in groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                {% endfor %}
+            </select>
+        {% else %}
+            <div class="alert alert-warning mt-2">No groups found. Please create groups in the <a href="/admin/auth/group/" target="_blank">Django admin</a> first.</div>
+        {% endif %}
         <button type="submit" class="btn btn-primary">Create Admin User</button>
     </form>
 </div>

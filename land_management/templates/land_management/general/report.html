@@ -15,6 +15,9 @@
                     <a href="?{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}{% if selected_status %}status={{ selected_status }}&{% endif %}{% if selected_region %}region={{ selected_region }}&{% endif %}export=excel" class="btn btn-success">
                         <i class="fas fa-download"></i> Export Excel
                     </a>
+                    <a href="?{% if start_date %}start_date={{ start_date }}&{% endif %}{% if end_date %}end_date={{ end_date }}&{% endif %}{% if selected_status %}status={{ selected_status }}&{% endif %}{% if selected_region %}region={{ selected_region }}&{% endif %}export=pdf" class="btn btn-danger">
+                        <i class="fas fa-file-pdf"></i> View PDF
+                    </a>
                 </div>
             </div>
         </div>
