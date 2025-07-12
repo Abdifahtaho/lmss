@@ -42,6 +42,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.models import Group
 
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
@@ -49,6 +50,13 @@ from django.conf import settings
 
 from django.contrib.auth.views import PasswordResetConfirmView
 from django.http import JsonResponse
+
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.pdfgen import canvas
+from reportlab.lib import colors
+from reportlab.platypus import Table as RLTable, TableStyle, SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from io import BytesIO
 
 def check_pending_password_reset(request):
     username = request.GET.get('username')
@@ -861,8 +869,6 @@ def generate_certificate(request, registration_id):
 @login_required
 def download_certificate_pdf(request, registration_id):
     registration = get_object_or_404(LandRegistration, id=registration_id)
-    
-    # Check if all steps are completed and final approval is granted
     if not all([
         registration.surveypayment,
         registration.landsurvey,
@@ -873,18 +879,83 @@ def download_certificate_pdf(request, registration_id):
     ]):
         messages.error(request, 'Cannot print certificate: Not all steps are completed or final approval is not granted.')
         return redirect('land_management:certificate_list')
-    
-    context = {
-        'registration': registration,
-        'survey_payment': registration.surveypayment,
-        'land_survey': registration.landsurvey,
-        'tax_payment': registration.taxpayment,
-        'land_mapping': registration.landmapping,
-        'approval': registration.approval,
-    }
-    
-    # Render the certificate template. The printing will be handled by client-side JavaScript.
-    return render(request, 'land_management/certificates/certificate.html', context)
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+    elements = []
+    styles = getSampleStyleSheet()
+    elements.append(Paragraph('LAND REGISTRATION CERTIFICATE', styles['Title']))
+    elements.append(Paragraph(f'Certificate No: {registration.transaction_reference}', styles['Normal']))
+    elements.append(Paragraph(f'Issued on: {timezone.now().strftime("%Y-%m-%d")}', styles['Normal']))
+    elements.append(Spacer(1, 12))
+
+    # Gather all details into a single table
+    details = [
+        ['ID', registration.id],
+        ['Transaction Reference', registration.transaction_reference],
+        ['Land Code', registration.land_code],
+        ['Owner Name', registration.buyer_full_name],
+        ['Size', f'{registration.land_size} {registration.size_unit}'],
+        ['Location', f'{registration.land_zone}, {registration.land_district}, {registration.land_region}'],
+        ['Sale Price', registration.sale_price],
+        ['Registration Date', registration.register_date.strftime('%Y-%m-%d') if registration.register_date else ''],
+        ['Admin Name', registration.surveypayment.admin_name],
+        ['Payer Name', registration.surveypayment.payer_name],
+        ['Survey Payment Amount', registration.surveypayment.payment_amount],
+        ['Survey Payment Method', registration.surveypayment.payment_method],
+        ['Survey Payment Date', registration.surveypayment.payment_date.strftime('%Y-%m-%d') if registration.surveypayment.payment_date else ''],
+        ['Survey Payment Status', registration.surveypayment.payment_status],
+        ['Survey Payment Receipt', registration.surveypayment.payment_receipt.url if registration.surveypayment.payment_receipt else 'N/A'],
+        ['Survey Number', registration.landsurvey.survey_number],
+        ['Parcel Number', registration.landsurvey.parcel_number],
+        ['Survey Land Code', registration.landsurvey.land_code],
+        ['Survey Owner Name', registration.landsurvey.owner_name],
+        ['Survey Date', registration.landsurvey.survey_date.strftime('%Y-%m-%d') if registration.landsurvey.survey_date else ''],
+        ['Surveyor Name', registration.landsurvey.surveyor_name],
+        ['Survey Location', registration.landsurvey.survey_location],
+        ['Coordinates', registration.landsurvey.coordinates],
+        ['Land Direction', registration.landsurvey.land_direction],
+        ['Survey Documents', registration.landsurvey.survey_documents.url if registration.landsurvey.survey_documents else 'N/A'],
+        ['Tax Admin Full Name', registration.taxpayment.admin_fullname],
+        ['Tax Land Owner Name', registration.taxpayment.land_owner_name],
+        ['Tax Land Reference No', registration.taxpayment.land_reference_no],
+        ['Tax Land Price', registration.taxpayment.land_price],
+        ['Tax Price', registration.taxpayment.tax_price],
+        ['Tax Payment Date', registration.taxpayment.payment_date.strftime('%Y-%m-%d') if registration.taxpayment.payment_date else ''],
+        ['Tax Payment Status', registration.taxpayment.payment_status],
+        ['Tax Receipt Number', registration.taxpayment.receipt_number],
+        ['Tax Notes', registration.taxpayment.notes],
+        ['Land Mapping Reference', registration.landmapping.land_reference],
+        ['Map Coordinates', registration.landmapping.map_coordinates],
+        ['Mapping Date', registration.landmapping.mapping_date.strftime('%Y-%m-%d') if registration.landmapping.mapping_date else ''],
+        ['Mapped By', registration.landmapping.mapped_by],
+        ['Mapping Status', registration.landmapping.mapping_status],
+        ['Map Document', registration.landmapping.map_document.url if registration.landmapping.map_document else 'N/A'],
+        ['Director', f"{registration.approval.director_full_name} (Title: {registration.approval.director_title}, Email: {registration.approval.director_email})"],
+        ['Director Status', f"{registration.approval.director_status} on {registration.approval.director_approval_date.strftime('%Y-%m-%d') if registration.approval.director_approval_date else ''}"],
+        ['Secretary', f"{registration.approval.secretary_full_name} (Title: {registration.approval.secretary_title}, Email: {registration.approval.secretary_email})"],
+        ['Secretary Status', f"{registration.approval.secretary_status} on {registration.approval.secretary_approval_date.strftime('%Y-%m-%d') if registration.approval.secretary_approval_date else ''}"],
+        ['Deputy Mayor', f"{registration.approval.deputy_mayor_full_name} (Title: {registration.approval.deputy_mayor_title}, Email: {registration.approval.deputy_mayor_email})"],
+        ['Deputy Mayor Status', f"{registration.approval.deputy_mayor_status} on {registration.approval.deputy_mayor_approval_date.strftime('%Y-%m-%d') if registration.approval.deputy_mayor_approval_date else ''}"],
+        ['Mayor', f"{registration.approval.mayor_full_name} (Title: {registration.approval.mayor_title}, Email: {registration.approval.mayor_email})"],
+        ['Mayor Status', f"{registration.approval.mayor_status} on {registration.approval.mayor_approval_date.strftime('%Y-%m-%d') if registration.approval.mayor_approval_date else ''}"],
+    ]
+    details_table = RLTable(details, hAlign='LEFT', colWidths=[160, 320])
+    details_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+    ]))
+    elements.append(details_table)
+    elements.append(Spacer(1, 18))
+    elements.append(Paragraph('This certificate confirms the completion of the land registration process.', styles['Italic']))
+    doc.build(elements)
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="certificate_{registration.transaction_reference}.pdf"'
+    return response
 
 @login_required
 def report(request):
@@ -1145,6 +1216,68 @@ def report(request):
             ])
         return response
 
+    if request.GET.get('export') == 'pdf':
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=landscape(A4))
+        elements = []
+        styles = getSampleStyleSheet()
+        elements.append(Paragraph('LAND MANAGEMENT SYSTEM - REPORT SUMMARY', styles['Title']))
+        elements.append(Paragraph(f'Generated: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}', styles['Normal']))
+        elements.append(Spacer(1, 12))
+        # Summary
+        summary_data = [
+            ['Total Registrations', total],
+            ['Completed', completed],
+            ['Pending', pending],
+            ['Approved', approved],
+            ['Rejected', rejected],
+            ['Total Value (SLS)', f"{total_value:,.2f}"],
+            ['Average Sale Price (SLS)', f"{avg_value:,.2f}"],
+        ]
+        summary_table = RLTable(summary_data, hAlign='LEFT')
+        summary_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ]))
+        elements.append(summary_table)
+        elements.append(Spacer(1, 18))
+        # Table headers
+        data = [[
+            'Transaction Ref', 'Buyer', 'Seller', 'Land Code', 'Status', 'Region', 'Register Date', 'Sale Price (SLS)'
+        ]]
+        for reg in registrations:
+            data.append([
+                reg.transaction_reference,
+                reg.buyer_full_name,
+                reg.seller_full_name,
+                reg.land_code,
+                reg.status,
+                reg.land_region,
+                reg.register_date.strftime('%Y-%m-%d') if reg.register_date else '',
+                f"{reg.sale_price:,.2f}" if reg.sale_price is not None else '',
+            ])
+        table = RLTable(data, repeatRows=1)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ]))
+        elements.append(table)
+        doc.build(elements)
+        buffer.seek(0)
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="land_management_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"'
+        return response
+
     context = {
         'registrations': registrations,
         'total': total,
@@ -1358,17 +1491,26 @@ def delete_land_registration(request, registration_id):
 
 @user_passes_test(lambda u: u.is_superuser)
 def create_user(request):
+    groups = Group.objects.all()
     if request.method == 'POST':
         form = UserCreateForm(request.POST)
+        selected_group_id = request.POST.get('group')
         if form.is_valid():
             user = form.save(commit=False)
             user.set_password(form.cleaned_data['password'])
             user.save()
+            # Assign to selected group if provided
+            if selected_group_id:
+                try:
+                    group = Group.objects.get(id=selected_group_id)
+                    user.groups.add(group)
+                except Group.DoesNotExist:
+                    pass
             messages.success(request, 'Admin user created successfully!')
             return redirect('land_management:user_list')
     else:
         form = UserCreateForm()
-    return render(request, 'land_management/general/user_create.html', {'form': form})
+    return render(request, 'land_management/general/user_create.html', {'form': form, 'groups': groups})
 
 @login_required
 def gift_land_registration(request, registration_id=None):
