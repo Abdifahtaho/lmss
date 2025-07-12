@@ -1,331 +1,97 @@
 {% extends 'land_management/general/base.html' %}
+{% load crispy_forms_tags %}
 
 {% block title %}New Land Registration{% endblock %}
 
 {% block content %}
-<style>
-    /* Override existing form container styles */
-    .bg-white { background-color: transparent !important; }
-    .p-6 { padding: 0 !important; }
-    .rounded-lg { border-radius: 0 !important; }
-    .shadow-md { box-shadow: none !important; }
-
-    /* Ensure single column layout and spacing as seen in image */
-    .grid {
-        display: block !important; /* Force block display to override grid */
-    }
-    .grid > div {
-        margin-bottom: 15px; /* Spacing between each field group */
-    }
-
-    /* Style labels to be block-level and spaced */
-    .block.text-gray-700 {
-        display: block !important;
-        color: #333 !important;
-        margin-bottom: 5px; /* Space between label and input */
-        font-weight: normal; /* Default font weight */
-    }
-
-    /* Style all input fields, selects, and textareas */
-    .w-full {
-        width: 300px !important; /* Fixed width as seen in image */
-        max-width: 100%; /* Ensure responsiveness on smaller screens */
-    }
-    .p-2 {
-        padding: 3px 5px !important; /* Smaller padding for inputs */
-    }
-    .border {
-        border: 1px solid #ccc !important; /* Standard grey border */
-    }
-    .rounded {
-        border-radius: 3px !important; /* Slightly rounded corners */
-    }
-
-    /* Adjust specific input types if needed */
-    input[type="date"],
-    input[type="number"],
-    input[type="text"],
-    textarea,
-    select {
-        box-sizing: border-box; /* Include padding and border in the element's total width and height */
-    }
-
-    /* Style the submit button */
-    .mt-4 { margin-top: 20px !important; }
-    .bg-blue-500 { background-color: #007bff !important; border: 1px solid #007bff !important; }
-    .text-white { color: #fff !important; }
-    .px-4 { padding-left: 15px !important; padding-right: 15px !important; }
-    .py-2 { padding-top: 8px !important; padding-bottom: 8px !important; }
-    .rounded { border-radius: 3px !important; }
-    .hover\:bg-blue-700:hover { background-color: #0056b3 !important; border-color: #0056b3 !important; }
-    .transition { transition: background-color 0.2s ease-in-out !important; }
-</style>
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <form method="post" action="#" class="bg-white p-6 rounded-lg shadow-md" enctype="multipart/form-data">
+<div class="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 py-8">
+    <div class="w-full max-w-3xl bg-white border border-gray-200 rounded-2xl shadow-2xl p-8">
+        <h2 class="text-3xl font-extrabold text-center text-blue-800 mb-8 tracking-wide">Land Registration Form</h2>
+        <form method="post" enctype="multipart/form-data" class="space-y-8">
                 {% csrf_token %}
-                {% if form.non_field_errors %}
-                    <div class="alert alert-danger" role="alert">
-                        {% for error in form.non_field_errors %}
-                            {{ error }}
-                        {% endfor %}
+            <!-- Seller Information -->
+            <div class="mb-6">
+                <div class="bg-blue-100 rounded-t-lg px-4 py-2 mb-2">
+                    <h3 class="text-lg font-semibold text-blue-700">Seller Information</h3>
                     </div>
-                {% endif %}
-                <h2 class="text-lg font-semibold text-gray-700 mb-4">Land Registration Form</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5>Seller Information</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.seller_full_name.id_for_label }}" class="form-label">Seller Full Name</label>
-                                    {{ form.seller_full_name }}
-                                    {% if form.seller_full_name.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.seller_full_name.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.seller_national_id.id_for_label }}" class="form-label">Seller National ID</label>
-                                    {{ form.seller_national_id }}
-                                    {% if form.seller_national_id.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.seller_national_id.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.seller_birth_date.id_for_label }}" class="form-label">Seller Birth Date</label>
-                                    {{ form.seller_birth_date }}
-                                    {% if form.seller_birth_date.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.seller_birth_date.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.seller_phone.id_for_label }}" class="form-label">Seller Phone</label>
-                                    {{ form.seller_phone }}
-                                    {% if form.seller_phone.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.seller_phone.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-12 mb-3">
-                                    <label for="{{ form.seller_address.id_for_label }}" class="form-label">Seller Address</label>
-                                    {{ form.seller_address }}
-                                    {% if form.seller_address.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.seller_address.errors }}</div>
-                                    {% endif %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 rounded-b-lg p-4">
+                    {{ form.seller_full_name|as_crispy_field }}
+                    {{ form.seller_national_id|as_crispy_field }}
+                    {{ form.seller_birth_date|as_crispy_field }}
+                    {{ form.seller_phone|as_crispy_field }}
+                    <div class="md:col-span-2">{{ form.seller_address|as_crispy_field }}</div>
                                 </div>
                             </div>
+            <!-- Buyer Information -->
+            <div class="mb-6">
+                <div class="bg-green-100 rounded-t-lg px-4 py-2 mb-2">
+                    <h3 class="text-lg font-semibold text-green-700">Buyer Information</h3>
                         </div>
-                    </div>
-
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5>Buyer Information</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.buyer_full_name.id_for_label }}" class="form-label">Buyer Full Name</label>
-                                    {{ form.buyer_full_name }}
-                                    {% if form.buyer_full_name.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.buyer_full_name.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.buyer_national_id.id_for_label }}" class="form-label">Buyer National ID</label>
-                                    {{ form.buyer_national_id }}
-                                    {% if form.buyer_national_id.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.buyer_national_id.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.buyer_phone.id_for_label }}" class="form-label">Buyer Phone</label>
-                                    {{ form.buyer_phone }}
-                                    {% if form.buyer_phone.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.buyer_phone.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-12 mb-3">
-                                    <label for="{{ form.buyer_address.id_for_label }}" class="form-label">Buyer Address</label>
-                                    {{ form.buyer_address }}
-                                    {% if form.buyer_address.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.buyer_address.errors }}</div>
-                                    {% endif %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 rounded-b-lg p-4">
+                    {{ form.buyer_full_name|as_crispy_field }}
+                    {{ form.buyer_national_id|as_crispy_field }}
+                    {{ form.buyer_phone|as_crispy_field }}
+                    <div class="md:col-span-2">{{ form.buyer_address|as_crispy_field }}</div>
                                 </div>
                             </div>
+            <!-- Land Information -->
+            <div class="mb-6">
+                <div class="bg-purple-100 rounded-t-lg px-4 py-2 mb-2">
+                    <h3 class="text-lg font-semibold text-purple-700">Land Information</h3>
                         </div>
-                    </div>
-
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5>Land Information</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.land_code.id_for_label }}" class="form-label">Land Code</label>
-                                    {{ form.land_code }}
-                                    {% if form.land_code.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.land_code.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.land_size.id_for_label }}" class="form-label">Land Size</label>
-                                    {{ form.land_size }}
-                                    {% if form.land_size.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.land_size.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.size_unit.id_for_label }}" class="form-label">Size Unit</label>
-                                    {{ form.size_unit }}
-                                    {% if form.size_unit.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.size_unit.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.land_use_type.id_for_label }}" class="form-label">Land Use Type</label>
-                                    {{ form.land_use_type }}
-                                    {% if form.land_use_type.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.land_use_type.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.land_zone.id_for_label }}" class="form-label">Land Zone</label>
-                                    {{ form.land_zone }}
-                                    {% if form.land_zone.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.land_zone.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.land_district.id_for_label }}" class="form-label">Land District</label>
-                                    {{ form.land_district }}
-                                    {% if form.land_district.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.land_district.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.land_region.id_for_label }}" class="form-label">Land Region</label>
-                                    {{ form.land_region }}
-                                    {% if form.land_region.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.land_region.errors }}</div>
-                                    {% endif %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 rounded-b-lg p-4">
+                    {{ form.land_code|as_crispy_field }}
+                    {{ form.land_size|as_crispy_field }}
+                    {{ form.size_unit|as_crispy_field }}
+                    {{ form.land_use_type|as_crispy_field }}
+                    {{ form.land_zone|as_crispy_field }}
+                    {{ form.land_district|as_crispy_field }}
+                    {{ form.land_region|as_crispy_field }}
+                    {{ form.land_direction_east|as_crispy_field }}
+                    {{ form.land_direction_south|as_crispy_field }}
+                    {{ form.land_direction_west|as_crispy_field }}
                                 </div>
                             </div>
+            <!-- Transaction Details -->
+            <div class="mb-6">
+                <div class="bg-yellow-100 rounded-t-lg px-4 py-2 mb-2">
+                    <h3 class="text-lg font-semibold text-yellow-700">Transaction Details</h3>
                         </div>
-                    </div>
-
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5>Transaction Details</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.date_of_sale.id_for_label }}" class="form-label">Date of Sale</label>
-                                    {{ form.date_of_sale }}
-                                    {% if form.date_of_sale.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.date_of_sale.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.sale_price.id_for_label }}" class="form-label">Sale Price (SLS)</label>
-                                    {{ form.sale_price }}
-                                    {% if form.sale_price.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.sale_price.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.title_deed_number.id_for_label }}" class="form-label">Title Deed Number</label>
-                                    {{ form.title_deed_number }}
-                                    {% if form.title_deed_number.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.title_deed_number.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.title_deed_date.id_for_label }}" class="form-label">Title Deed Date</label>
-                                    {{ form.title_deed_date }}
-                                    {% if form.title_deed_date.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.title_deed_date.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.sale_deed_number.id_for_label }}" class="form-label">Sale Deed Number</label>
-                                    {{ form.sale_deed_number }}
-                                    {% if form.sale_deed_number.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.sale_deed_number.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.sale_deed_date.id_for_label }}" class="form-label">Sale Deed Date</label>
-                                    {{ form.sale_deed_date }}
-                                    {% if form.sale_deed_date.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.sale_deed_date.errors }}</div>
-                                    {% endif %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 rounded-b-lg p-4">
+                    {{ form.date_of_sale|as_crispy_field }}
+                    {{ form.sale_price|as_crispy_field }}
+                    {{ form.title_deed_number|as_crispy_field }}
+                    {{ form.title_deed_date|as_crispy_field }}
+                    {{ form.sale_deed_number|as_crispy_field }}
+                    {{ form.sale_deed_date|as_crispy_field }}
                                 </div>
                             </div>
+            <!-- Transaction Participants -->
+            <div class="mb-6">
+                <div class="bg-pink-100 rounded-t-lg px-4 py-2 mb-2">
+                    <h3 class="text-lg font-semibold text-pink-700">Transaction Participants</h3>
                         </div>
-                    </div>
-
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5>Transaction Participants</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.notary_name.id_for_label }}" class="form-label">Notary Name</label>
-                                    {{ form.notary_name }}
-                                    {% if form.notary_name.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.notary_name.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.guarantor_name.id_for_label }}" class="form-label">Guarantor Name</label>
-                                    {{ form.guarantor_name }}
-                                    {% if form.guarantor_name.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.guarantor_name.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.witness1_name.id_for_label }}" class="form-label">Witness 1 Name</label>
-                                    {{ form.witness1_name }}
-                                    {% if form.witness1_name.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.witness1_name.errors }}</div>
-                                    {% endif %}
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="{{ form.witness2_name.id_for_label }}" class="form-label">Witness 2 Name</label>
-                                    {{ form.witness2_name }}
-                                    {% if form.witness2_name.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.witness2_name.errors }}</div>
-                                    {% endif %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 rounded-b-lg p-4">
+                    {{ form.notary_name|as_crispy_field }}
+                    {{ form.guarantor_name|as_crispy_field }}
+                    {{ form.witness1_name|as_crispy_field }}
+                    {{ form.witness2_name|as_crispy_field }}
                                 </div>
                             </div>
+            <!-- Document Upload -->
+            <div class="mb-6">
+                <div class="bg-gray-200 rounded-t-lg px-4 py-2 mb-2">
+                    <h3 class="text-lg font-semibold text-gray-700">Supporting Documents</h3>
                         </div>
-                    </div>
-
-                    <div class="card mb-4">
-                        <div class="card-header">
-                            <h5>Documents</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-12 mb-3">
-                                    <label for="{{ form.documents.id_for_label }}" class="form-label">Documents</label>
-                                    {{ form.documents }}
-                                    {% if form.documents.errors %}
-                                        <div class="invalid-feedback d-block">{{ form.documents.errors }}</div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="bg-gray-50 rounded-b-lg p-4">
+                    {{ form.documents|as_crispy_field }}
                 </div>
-                <button type="submit" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-700 transition">Submit</button>
+            </div>
+            <button type="submit" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold px-6 py-3 rounded-lg shadow hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105">
+                <i class="fa fa-paper-plane"></i>
+                Register
+            </button>
             </form>
-        </div>
     </div>
 </div>
 {% endblock %} 

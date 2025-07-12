@@ -1,0 +1,189 @@
+{% extends 'land_management/general/base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+
+{% block title %}Inheritance Land Registration{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto py-8 px-4">
+    <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-primary mb-2">Inheritance Land Registration</h1>
+        <p class="text-muted">Register land transferred through inheritance from deceased to heir</p>
+    </div>
+
+    {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+                <div class="p-4 rounded-lg mb-4 {% if message.tags == 'success' %}bg-success text-white{% elif message.tags == 'error' %}bg-danger text-white{% else %}bg-info text-white{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="space-y-8">
+        {% csrf_token %}
+        <input type="hidden" name="registration_type" value="inheritance">
+
+        {# Show all form errors at the top #}
+        {% if form.non_field_errors %}
+          <div class="mb-4">
+            {% for error in form.non_field_errors %}
+              <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-2">
+                {{ error }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% for field in form %}
+          {% for error in field.errors %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-2">
+              {{ field.label }}: {{ error }}
+            </div>
+          {% endfor %}
+        {% endfor %}
+
+        <!-- Deceased Information Section -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center mb-6">
+                <div class="w-10 h-10 bg-dark rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-user-times text-white text-lg"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-dark">Deceased Person Information</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{ form.seller_full_name|as_crispy_field }}
+                {{ form.seller_national_id|as_crispy_field }}
+                {{ form.seller_birth_date|as_crispy_field }}
+                {{ form.seller_phone|as_crispy_field }}
+                <div class="md:col-span-2">
+                    {{ form.seller_address|as_crispy_field }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Heir Information Section -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center mb-6">
+                <div class="w-10 h-10 bg-success rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-user-plus text-white text-lg"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-success">Heir Information</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{ form.buyer_full_name|as_crispy_field }}
+                {{ form.buyer_national_id|as_crispy_field }}
+                {{ form.buyer_phone|as_crispy_field }}
+                <div class="md:col-span-2">
+                    {{ form.buyer_address|as_crispy_field }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Land Information Section -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center mb-6">
+                <div class="w-10 h-10 bg-info rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-map-marker-alt text-white text-lg"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-info">Land Information</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{ form.land_code|as_crispy_field }}
+                {{ form.land_size|as_crispy_field }}
+                {{ form.size_unit|as_crispy_field }}
+                {{ form.land_use_type|as_crispy_field }}
+                {{ form.land_zone|as_crispy_field }}
+                {{ form.land_district|as_crispy_field }}
+                {{ form.land_region|as_crispy_field }}
+            </div>
+            
+            <!-- Land Direction Information -->
+            <div class="mt-6 pt-6 border-t border-light">
+                <h3 class="text-lg font-semibold text-muted mb-4">Land Direction Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {{ form.land_direction_east|as_crispy_field }}
+                    {{ form.land_direction_south|as_crispy_field }}
+                    {{ form.land_direction_west|as_crispy_field }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Inheritance Details Section -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center mb-6">
+                <div class="w-10 h-10 bg-warning rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-scroll text-white text-lg"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-warning">Inheritance Details</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{ form.date_of_sale|as_crispy_field }}
+                {{ form.sale_deed_date|as_crispy_field }}
+                {{ form.title_deed_number|as_crispy_field }}
+                {{ form.title_deed_date|as_crispy_field }}
+                <div class="md:col-span-2">
+                    {{ form.sale_deed_number|as_crispy_field }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction Participants Section -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center mb-6">
+                <div class="w-10 h-10 bg-secondary rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-users text-white text-lg"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-secondary">Transaction Participants</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{ form.notary_name|as_crispy_field }}
+                {{ form.guarantor_name|as_crispy_field }}
+                {{ form.witness1_name|as_crispy_field }}
+                {{ form.witness2_name|as_crispy_field }}
+            </div>
+        </div>
+
+        <!-- Documents Section -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center mb-6">
+                <div class="w-10 h-10 bg-primary rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-file-upload text-white text-lg"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-primary">Supporting Documents</h2>
+            </div>
+            <div class="space-y-4">
+                {{ form.documents|as_crispy_field }}
+                <div class="bg-light p-4 rounded-lg">
+                    <h4 class="font-semibold text-muted mb-2">Required Documents:</h4>
+                    <ul class="text-sm text-muted space-y-1">
+                        <li>• Death Certificate of the deceased</li>
+                        <li>• Inheritance Certificate or Court Order</li>
+                        <li>• Title Deed of the land</li>
+                        <li>• National ID cards of heirs</li>
+                        <li>• Family tree or inheritance documentation</li>
+                        <li>• Any other relevant legal documents</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Buttons -->
+        <div class="flex justify-between items-center pt-6">
+            <a href="{% url 'land_management:dashboard' %}" class="bg-secondary hover:bg-secondary-dark text-white px-6 py-3 rounded-lg transition-colors duration-200 flex items-center">
+                <i class="fas fa-arrow-left mr-2"></i>
+                Back to Dashboard
+            </a>
+            <div class="flex space-x-4">
+                <button type="reset" class="bg-light hover:bg-secondary text-dark px-6 py-3 rounded-lg transition-colors duration-200">
+                    Reset Form
+                </button>
+                <button type="submit" class="bg-primary hover:bg-primary-dark text-white px-8 py-3 rounded-lg transition-colors duration-200 flex items-center">
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    Submit Inheritance Registration
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %} 

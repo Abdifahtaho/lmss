@@ -9,10 +9,14 @@ from .models import (
     LandSurvey,
     TaxPayment,
     LandMapping,
-    Approval
+    Approval,
+    PasswordResetRequest,
+    Notification
 )
 from .forms import (
     LandRegistrationForm,
+    GiftLandRegistrationForm,
+    InheritanceLandRegistrationForm,
     SurveyPaymentForm,
     LandSurveyForm,
     TaxPaymentForm,
@@ -24,7 +28,9 @@ from .forms import (
     MayorApprovalForm,
     ProfileForm,
     UserEditForm,
-    UserCreateForm
+    UserCreateForm,
+    UsernamePasswordResetForm,
+    SetPasswordForm
 )
 from django.urls import reverse
 from django.utils import timezone
@@ -37,6 +43,38 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.admin.views.decorators import staff_member_required
 
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
+from django.conf import settings
+
+from django.contrib.auth.views import PasswordResetConfirmView
+from django.http import JsonResponse
+
+def check_pending_password_reset(request):
+    username = request.GET.get('username')
+    if not username:
+        return JsonResponse({'status': 'error', 'message': 'No username provided.'})
+    try:
+        user = User.objects.get(username=username)
+        approved_request = PasswordResetRequest.objects.filter(user=user, status='approved').first()
+        if approved_request:
+            return JsonResponse({
+                'status': 'approved',
+                'requested_at': approved_request.requested_at.strftime('%B %d, %Y at %I:%M %p'),
+                'message': f'Your password reset request was approved on {approved_request.requested_at.strftime("%B %d, %Y at %I:%M %p")}. You can now set a new password.'
+            })
+        pending_request = PasswordResetRequest.get_pending_request(user)
+        if pending_request:
+            return JsonResponse({
+                'status': 'pending',
+                'requested_at': pending_request.requested_at.strftime('%B %d, %Y at %I:%M %p'),
+                'message': f'You have a password reset request submitted on {pending_request.requested_at.strftime("%B %d, %Y at %I:%M %p")} that is currently pending approval. Please wait for administrator review before submitting a new request.'
+            })
+        else:
+            return JsonResponse({'status': 'ok'})
+    except User.DoesNotExist:
+        return JsonResponse({'status': 'not_found', 'message': 'User does not exist.'})
+
 @login_required
 def dashboard(request):
     registrations = LandRegistration.objects.filter(user=request.user)
@@ -44,6 +82,11 @@ def dashboard(request):
     pending_count = registrations.filter(status='pending').count()
     rejected_count = registrations.filter(status='rejected').count()
     completed_count = registrations.filter(status='completed').count()
+    
+    # Get notifications for superusers
+    notifications_list = []
+    if request.user.is_superuser:
+        notifications_list = Notification.objects.filter(user=request.user, is_read=False)[:5]
 
     # Filtering
     start_date = request.GET.get('start_date')
@@ -118,6 +161,7 @@ def dashboard(request):
         'approval_status_counts': approval_status_counts,
         'approval_statuses': approval_statuses,
         'notifications': notifications,
+        'notifications_list': notifications_list,  # New notifications for superusers
         'user': request.user,
         'all_regions': all_regions,
         'selected_status': status or 'all',
@@ -1185,6 +1229,101 @@ def user_reset_password(request, user_id):
             messages.error(request, 'Could not send reset email.')
     return render(request, 'land_management/general/user_reset_password.html', {'user_obj': user})
 
+def password_reset_request(request):
+    user_not_found = False
+    pending_request = None
+    approved_request = None
+    set_password_form = None
+    user = None
+    if request.method == 'POST':
+        form = UsernamePasswordResetForm(request.POST)
+        username = request.POST.get('username')
+        # Check if this is a set password form submission
+        if 'new_password1' in request.POST and 'new_password2' in request.POST and username:
+            try:
+                user = User.objects.get(username=username)
+                approved_request = PasswordResetRequest.objects.filter(user=user, status='approved').first()
+                if approved_request:
+                    set_password_form = SetPasswordForm(user, request.POST)
+                    if set_password_form.is_valid():
+                        set_password_form.save()
+                        approved_request.status = 'completed'
+                        approved_request.save()
+                        messages.success(request, 'Your password has been reset successfully. You can now log in with your new password.')
+                        return redirect('land_management:login')
+                else:
+                    messages.error(request, 'No approved password reset request found for this user.')
+            except User.DoesNotExist:
+                user_not_found = True
+                messages.error(request, 'User does not exist. Please check your username and try again.')
+            return render(request, 'land_management/general/password_reset_form.html', {'form': form, 'user_not_found': user_not_found, 'set_password_form': set_password_form, 'approved_request': approved_request})
+        # Otherwise, handle the request form as before
+        if form.is_valid():
+            try:
+                user = form.get_user()
+            except User.DoesNotExist:
+                user_not_found = True
+                messages.error(request, 'User does not exist. Please check your username and try again.')
+                return render(request, 'land_management/general/password_reset_form.html', {'form': form, 'user_not_found': user_not_found})
+            existing_pending_request = PasswordResetRequest.get_pending_request(user)
+            if existing_pending_request:
+                time_since_request = timezone.now() - existing_pending_request.requested_at
+                hours_since_request = time_since_request.total_seconds() / 3600
+                if hours_since_request < 24:
+                    messages.warning(
+                        request,
+                        f'You already have a pending password reset request submitted on {existing_pending_request.requested_at.strftime("%B %d, %Y at %I:%M %p")}. '
+                        'Please wait for a superuser or administrator to review and approve your request. '
+                        'You will receive an email notification once your request is processed. '
+                        'If you need urgent assistance, please contact the system administrator directly.'
+                    )
+                    return redirect('land_management:login')
+                else:
+                    existing_pending_request.status = 'rejected'
+                    existing_pending_request.rejection_reason = 'Request expired - user submitted new request'
+                    existing_pending_request.processed_at = timezone.now()
+                    existing_pending_request.save()
+            reset_request = PasswordResetRequest.objects.create(
+                user=user,
+                rejection_reason=form.cleaned_data.get('reason', '')
+            )
+            superusers = User.objects.filter(is_superuser=True)
+            for superuser in superusers:
+                Notification.objects.create(
+                    title=f"Password Reset Request from {user.username}",
+                    message=f"User {user.get_full_name() or user.username} has requested a password reset. Reason: {form.cleaned_data.get('reason', 'No reason provided')}",
+                    notification_type='password_reset',
+                    user=superuser,
+                    related_object_id=reset_request.id,
+                    related_object_type='PasswordResetRequest'
+                )
+            messages.success(request, 'Your password reset request has been submitted and is pending admin approval. You will receive an email once it is approved.')
+            return redirect('land_management:login')
+        else:
+            messages.error(request, 'Please correct the errors below.')
+    else:
+        form = UsernamePasswordResetForm()
+        username = request.GET.get('username')
+        if username:
+            try:
+                user = User.objects.get(username=username)
+                # Check for approved request
+                approved_request = PasswordResetRequest.objects.filter(user=user, status='approved').first()
+                if approved_request:
+                    set_password_form = SetPasswordForm(user)
+                else:
+                    pending_request = PasswordResetRequest.get_pending_request(user)
+            except User.DoesNotExist:
+                user_not_found = True
+    return render(request, 'land_management/general/password_reset_form.html', {
+        'form': form,
+        'pending_request': pending_request,
+        'user_not_found': user_not_found,
+        'set_password_form': set_password_form,
+        'approved_request': approved_request,
+        'username': username or '',
+    })
+
 @login_required
 def registration_list(request):
     if request.user.is_staff:
@@ -1230,3 +1369,176 @@ def create_user(request):
     else:
         form = UserCreateForm()
     return render(request, 'land_management/general/user_create.html', {'form': form})
+
+@login_required
+def gift_land_registration(request, registration_id=None):
+    registration = None
+    if registration_id:
+        registration = get_object_or_404(LandRegistration, id=registration_id, user=request.user, registration_type='gift')
+
+    if request.method == 'POST':
+        try:
+            if registration: # Editing an existing registration
+                form = GiftLandRegistrationForm(request.POST, request.FILES, instance=registration)
+            else: # Creating a new registration
+                form = GiftLandRegistrationForm(request.POST, request.FILES)
+            
+            if form.is_valid():
+                registration = form.save(commit=False)
+                registration.user = request.user
+                registration.registration_type = 'gift'  # <-- force the type
+                registration.status = 'pending'
+                registration.current_step = 'registration'
+
+                # Generate unique transaction_reference only for new registrations
+                if not registration_id:
+                    registration.transaction_reference = f"GIFT-{timezone.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6].upper()}"
+
+                registration.save()
+
+                # If this was a returned registration, clear approval return info
+                if registration_id and hasattr(registration, 'approval') and registration.approval.return_step:
+                    approval_instance = registration.approval
+                    approval_instance.return_step = None
+                    approval_instance.rejection_reason = None
+                    approval_instance.rejection_date = None
+                    approval_instance.returned_by = None
+                    approval_instance.save()
+
+                messages.success(request, f'Gift land registration submitted successfully! Transaction Reference: {registration.transaction_reference}')
+                return redirect('land_management:survey_payment', registration_id=registration.id)
+            else:
+                messages.error(request, 'Please correct the errors in the form.')
+        except Exception as e:
+            messages.error(request, f'Error saving registration: {str(e)}')
+    else: # GET request
+        if registration: # Pre-fill form for existing registration
+            form = GiftLandRegistrationForm(instance=registration, initial={'registration_type': 'gift'})
+        else: # Blank form for new registration
+            form = GiftLandRegistrationForm(initial={'registration_type': 'gift'})
+
+    return render(request, 'land_management/registrations/gift_land_registration.html', {'form': form, 'registration': registration})
+
+@login_required
+def inheritance_land_registration(request, registration_id=None):
+    registration = None
+    if registration_id:
+        registration = get_object_or_404(LandRegistration, id=registration_id, user=request.user, registration_type='inheritance')
+
+    if request.method == 'POST':
+        try:
+            if registration: # Editing an existing registration
+                form = InheritanceLandRegistrationForm(request.POST, request.FILES, instance=registration)
+            else: # Creating a new registration
+                form = InheritanceLandRegistrationForm(request.POST, request.FILES)
+            
+            if form.is_valid():
+                registration = form.save(commit=False)
+                registration.user = request.user
+                registration.registration_type = 'inheritance'  # <-- force the type
+                registration.status = 'pending'
+                registration.current_step = 'registration'
+
+                # Generate unique transaction_reference only for new registrations
+                if not registration_id:
+                    registration.transaction_reference = f"INH-{timezone.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6].upper()}"
+
+                registration.save()
+
+                # If this was a returned registration, clear approval return info
+                if registration_id and hasattr(registration, 'approval') and registration.approval.return_step:
+                    approval_instance = registration.approval
+                    approval_instance.return_step = None
+                    approval_instance.rejection_reason = None
+                    approval_instance.rejection_date = None
+                    approval_instance.returned_by = None
+                    approval_instance.save()
+
+                messages.success(request, f'Inheritance land registration submitted successfully! Transaction Reference: {registration.transaction_reference}')
+                return redirect('land_management:survey_payment', registration_id=registration.id)
+            else:
+                messages.error(request, 'Please correct the errors in the form.')
+        except Exception as e:
+            messages.error(request, f'Error saving registration: {str(e)}')
+    else: # GET request
+        if registration: # Pre-fill form for existing registration
+            form = InheritanceLandRegistrationForm(instance=registration, initial={'registration_type': 'inheritance'})
+        else: # Blank form for new registration
+            form = InheritanceLandRegistrationForm(initial={'registration_type': 'inheritance'})
+
+    return render(request, 'land_management/registrations/inheritance_land_registration.html', {'form': form, 'registration': registration})
+
+@user_passes_test(lambda u: u.is_superuser)
+@login_required
+def password_reset_approval_dashboard(request):
+    """Dashboard for superusers to approve/reject password reset requests"""
+    pending_requests = PasswordResetRequest.objects.filter(status='pending').order_by('-requested_at')
+    approved_requests = PasswordResetRequest.objects.filter(status='approved').order_by('-requested_at')[:10]
+    rejected_requests = PasswordResetRequest.objects.filter(status='rejected').order_by('-requested_at')[:10]
+    
+    context = {
+        'pending_requests': pending_requests,
+        'approved_requests': approved_requests,
+        'rejected_requests': rejected_requests,
+    }
+    return render(request, 'land_management/general/password_reset_approval_dashboard.html', context)
+
+@user_passes_test(lambda u: u.is_superuser)
+@login_required
+def approve_password_reset(request, request_id):
+    """Approve a password reset request (no email sent)"""
+    reset_request = get_object_or_404(PasswordResetRequest, id=request_id, status='pending')
+    try:
+        # Get the user from the reset request
+        user = reset_request.user
+        # Update request status (no email sent)
+        reset_request.status = 'approved'
+        reset_request.processed_by = request.user
+        reset_request.processed_at = timezone.now()
+        reset_request.save()
+        messages.success(request, f'Password reset approved for {user.username}. (No email sent)')
+    except Exception as e:
+        messages.error(request, f'Error approving password reset: {str(e)}')
+    return redirect('land_management:password_reset_approval_dashboard')
+
+@user_passes_test(lambda u: u.is_superuser)
+@login_required
+def reject_password_reset(request, request_id):
+    """Reject a password reset request"""
+    reset_request = get_object_or_404(PasswordResetRequest, id=request_id, status='pending')
+    
+    reset_request.status = 'rejected'
+    reset_request.processed_by = request.user
+    reset_request.processed_at = timezone.now()
+    reset_request.save()
+    
+    messages.success(request, f'Password reset request for {reset_request.user.username} has been rejected')
+    return redirect('land_management:password_reset_approval_dashboard')
+
+@user_passes_test(lambda u: u.is_superuser)
+@login_required
+def notifications_view(request):
+    """View all notifications for superusers"""
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Mark notifications as read when viewed
+    unread_notifications = notifications.filter(is_read=False)
+    unread_notifications.update(is_read=True)
+    
+    context = {
+        'notifications': notifications,
+    }
+    return render(request, 'land_management/general/notifications.html', context)
+
+@user_passes_test(lambda u: u.is_superuser)
+@login_required
+def mark_notification_read(request, notification_id):
+    """Mark a notification as read"""
+    notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+    notification.is_read = True
+    notification.save()
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'status': 'success'})
+    
+    return redirect('land_management:notifications')

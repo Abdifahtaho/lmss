@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.core.validators import FileExtensionValidator
 import re
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 
 # Custom Validators
 
@@ -19,6 +20,16 @@ def validate_alpha_name(value):
         raise ValidationError('Name must contain only letters and spaces.')
 
 class LandRegistration(models.Model):
+    REGISTRATION_TYPE_CHOICES = [
+        ('sale', 'Land Sale'),
+        ('gift', 'Gift Land'),
+        ('inheritance', 'Inheritance'),
+        ('exchange', 'Land Exchange'),
+        ('donation', 'Donation'),
+        ('court_order', 'Court Order'),
+        ('government_allocation', 'Government Allocation'),
+    ]
+    
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('approved', 'Approved'),
@@ -44,20 +55,23 @@ class LandRegistration(models.Model):
         ('empty', 'Empty'),
     ]
     
+    # Registration Type
+    registration_type = models.CharField(max_length=30, choices=REGISTRATION_TYPE_CHOICES, default='sale')
+    
     # Basic Information
     transaction_reference = models.CharField(max_length=20, unique=True)
     date_of_sale = models.DateField()
     register_date = models.DateField(auto_now_add=True)
-    sale_price = models.DecimalField(max_digits=15, decimal_places=2)  # For SLS currency
+    sale_price = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)  # Optional for non-sale types
     
-    # Seller Information
+    # Seller/Transferor Information
     seller_full_name = models.CharField(max_length=255, validators=[validate_alpha_name])
     seller_national_id = models.CharField(max_length=50, validators=[validate_national_id])
     seller_birth_date = models.DateField()
     seller_phone = models.CharField(max_length=20, validators=[validate_phone_number])
     seller_address = models.TextField(blank=True, null=True)
     
-    # Buyer Information
+    # Buyer/Transferee Information
     buyer_full_name = models.CharField(max_length=255, validators=[validate_alpha_name])
     buyer_national_id = models.CharField(max_length=50, validators=[validate_national_id])
     buyer_phone = models.CharField(max_length=20, validators=[validate_phone_number])
@@ -97,12 +111,15 @@ class LandRegistration(models.Model):
     documents = models.FileField(upload_to='land_documents/', validators=[FileExtensionValidator(['pdf', 'jpg', 'jpeg', 'png'])], blank=True, null=True)
     
     def __str__(self):
-        return f"Land Registration - {self.transaction_reference}"
+        return f"{self.get_registration_type_display()} - {self.transaction_reference}"
 
     def clean(self):
         super().clean()
         if self.seller_national_id == self.buyer_national_id:
             raise ValidationError('Seller and buyer cannot have the same national ID.')
+        # Only require sale_price for land sale
+        if getattr(self, 'registration_type', 'sale') == 'sale' and not self.sale_price:
+            raise ValidationError('Sale price is required for land sale transactions.')
 
 class SurveyPayment(models.Model):
     PAYMENT_STATUS = [
@@ -260,3 +277,63 @@ class Approval(models.Model):
     
     def __str__(self):
         return f"Approval Process - {self.land_registration.transaction_reference}"
+
+class PasswordResetRequest(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    requested_at = models.DateTimeField(default=timezone.now)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    processed_at = models.DateTimeField(null=True, blank=True)
+    processed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='processed_resets')
+    rejection_reason = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Password Reset for {self.user.username} ({self.status})"
+    
+    def has_pending_request(self):
+        """Check if user has a pending request within 24 hours"""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        cutoff_time = timezone.now() - timedelta(hours=24)
+        return PasswordResetRequest.objects.filter(
+            user=self.user,
+            status='pending',
+            requested_at__gte=cutoff_time
+        ).exists()
+    
+    @classmethod
+    def get_pending_request(cls, user):
+        """Get the most recent pending request for a user"""
+        return cls.objects.filter(
+            user=user,
+            status='pending'
+        ).order_by('-requested_at').first()
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = [
+        ('password_reset', 'Password Reset Request'),
+        ('registration', 'New Registration'),
+        ('approval', 'Approval Required'),
+        ('payment', 'Payment Received'),
+        ('system', 'System Notification'),
+    ]
+    
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)  # For user-specific notifications
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=timezone.now)
+    related_object_id = models.IntegerField(null=True, blank=True)  # For linking to specific objects
+    related_object_type = models.CharField(max_length=50, null=True, blank=True)  # Model name
+    
+    class Meta:
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.notification_type}: {self.title}"

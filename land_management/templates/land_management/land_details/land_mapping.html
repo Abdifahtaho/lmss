@@ -1,133 +1,55 @@
 {% extends 'general/base.html' %}
+{% load crispy_forms_tags %}
 
 {% block title %}Land Mapping - LOMS{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Land Mapping for {{ registration.transaction_reference }}</h3>
+<div class="flex justify-center items-center min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 py-8">
+    <div class="w-full max-w-2xl bg-white border border-gray-200 rounded-2xl shadow-2xl p-8">
+        <h2 class="text-2xl font-bold text-center mb-6 text-blue-800">Land Mapping for {{ registration.transaction_reference }}</h2>
+        <!-- Land Registration Details -->
+        <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h3 class="text-lg font-semibold text-blue-700 mb-2 flex items-center"><i class="fas fa-info-circle mr-2"></i>Land Registration Details</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                <div>
+                    <p><strong>Transaction Ref:</strong> {{ registration.transaction_reference }}</p>
+                    <p><strong>Date of Sale:</strong> {{ registration.date_of_sale }}</p>
+                    <p><strong>Sale Price:</strong> {{ registration.sale_price }} SLS</p>
+                    <p><strong>Land Code:</strong> {{ registration.land_code }}</p>
                 </div>
-                <div class="card-body">
-                    {% if messages %}
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        {% endfor %}
-                    {% endif %}
-
-                    <!-- Coordinate Display -->
-                    <div class="card mb-4 bg-light border">
-                        <div class="card-header bg-transparent">
-                            <h5 class="mb-0">Current Coordinates</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="latitude">Latitude</label>
-                                        <input type="text" id="latitude" class="form-control" readonly>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="longitude">Longitude</label>
-                                        <input type="text" id="longitude" class="form-control" readonly>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card mb-4 bg-light border">
-                        <div class="card-header bg-transparent">
-                            <h5 class="mb-0">Land Registration Details</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <p><strong>Transaction Ref:</strong> {{ registration.transaction_reference }}</p>
-                                    <p><strong>Date of Sale:</strong> {{ registration.date_of_sale }}</p>
-                                    <p><strong>Sale Price:</strong> {{ registration.sale_price }} SLS</p>
-                                    <p><strong>Land Code:</strong> {{ registration.land_code }}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <p><strong>Buyer:</strong> {{ registration.buyer_full_name }}</p>
-                                    <p><strong>Land Size:</strong> {{ registration.land_size }} {{ registration.size_unit }}</p>
-                                    <p><strong>Land Zone:</strong> {{ registration.land_zone }}</p>
-                                    <p><strong>Land Use:</strong> {{ registration.land_use_type }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
-                        {% csrf_token %}
-                        <div class="card mb-4">
-                            <div class="card-header">
-                                <h5>Land Mapping Details</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="{{ form.land_reference.id_for_label }}" class="form-label">Land Reference</label>
-                                        {{ form.land_reference }}
-                                        {% if form.land_reference.errors %}
-                                            <div class="invalid-feedback d-block">{{ form.land_reference.errors }}</div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="{{ form.map_coordinates.id_for_label }}" class="form-label">Map Coordinates</label>
-                                        {{ form.map_coordinates }}
-                                        {% if form.map_coordinates.errors %}
-                                            <div class="invalid-feedback d-block">{{ form.map_coordinates.errors }}</div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="{{ form.mapping_date.id_for_label }}" class="form-label">Mapping Date</label>
-                                        {{ form.mapping_date }}
-                                        {% if form.mapping_date.errors %}
-                                            <div class="invalid-feedback d-block">{{ form.mapping_date.errors }}</div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="{{ form.mapped_by.id_for_label }}" class="form-label">Mapped By</label>
-                                        {{ form.mapped_by }}
-                                        {% if form.mapped_by.errors %}
-                                            <div class="invalid-feedback d-block">{{ form.mapped_by.errors }}</div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="{{ form.mapping_status.id_for_label }}" class="form-label">Mapping Status</label>
-                                        {{ form.mapping_status }}
-                                        {% if form.mapping_status.errors %}
-                                            <div class="invalid-feedback d-block">{{ form.mapping_status.errors }}</div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="{{ form.map_document.id_for_label }}" class="form-label">Map Document</label>
-                                        {{ form.map_document }}
-                                        {% if form.map_document.errors %}
-                                            <div class="invalid-feedback d-block">{{ form.map_document.errors }}</div>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div id="map" style="height: 400px; width: 100%;"></div>
-                            </div>
-                        </div>
-                        <div class="text-end">
-                            <a href="{% url 'land_management:dashboard' %}" class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save"></i> Submit Mapping
-                            </button>
-                        </div>
-                    </form>
+                <div>
+                    <p><strong>Buyer:</strong> {{ registration.buyer_full_name }}</p>
+                    <p><strong>Land Size:</strong> {{ registration.land_size }} {{ registration.size_unit }}</p>
+                    <p><strong>Land Zone:</strong> {{ registration.land_zone }}</p>
+                    <p><strong>Land Use:</strong> {{ registration.land_use_type }}</p>
                 </div>
             </div>
+        </div>
+        <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center"><i class="fas fa-map-marked-alt mr-2"></i>Land Mapping Details</h3>
+                {{ form|crispy }}
+            </div>
+            <div class="flex justify-end gap-2 mt-4">
+                <a href="{% url 'land_management:dashboard' %}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold px-4 py-2 rounded transition">Cancel</a>
+                <button type="submit" class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold px-6 py-2 rounded-lg shadow hover:from-blue-700 hover:to-purple-700 transition-all duration-200 transform hover:scale-105">
+                    <i class="fas fa-save"></i> Submit Mapping
+                </button>
+            </div>
+        </form>
+        <div class="mt-8">
+            <div class="mb-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <label for="latitude" class="block text-gray-700 font-semibold mb-2 text-lg">Latitude</label>
+                    <input type="text" id="latitude" class="form-input w-full rounded-lg border-2 border-blue-300 text-lg py-3 px-4 bg-blue-50" readonly>
+                </div>
+                <div>
+                    <label for="longitude" class="block text-gray-700 font-semibold mb-2 text-lg">Longitude</label>
+                    <input type="text" id="longitude" class="form-input w-full rounded-lg border-2 border-blue-300 text-lg py-3 px-4 bg-blue-50" readonly>
+                </div>
+            </div>
+            <div id="map" class="rounded-xl border-2 border-blue-400 shadow-lg" style="height: 550px; width: 100%;"></div>
         </div>
     </div>
 </div>

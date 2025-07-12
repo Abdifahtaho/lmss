@@ -22,6 +22,10 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('register/', views.land_registration, name='land_registration'),
     path('register/<int:registration_id>/', views.land_registration, name='edit_land_registration'),
+    path('gift-register/', views.gift_land_registration, name='gift_land_registration'),
+    path('gift-register/<int:registration_id>/', views.gift_land_registration, name='edit_gift_land_registration'),
+    path('inheritance-register/', views.inheritance_land_registration, name='inheritance_land_registration'),
+    path('inheritance-register/<int:registration_id>/', views.inheritance_land_registration, name='edit_inheritance_land_registration'),
     path('registration/<int:registration_id>/', views.registration_detail, name='registration_detail'),
     path('registration/<int:registration_id>/survey-payment/', views.survey_payment, name='survey_payment'),
     path('registration/<int:registration_id>/land-survey/', views.land_survey, name='land_survey'),
@@ -43,12 +47,7 @@ urlpatterns = [
     path('registrations/', views.registration_list, name='registration_list'),
     path('registrations/<int:registration_id>/edit/', views.edit_land_registration, name='edit_land_registration'),
     path('registrations/<int:registration_id>/delete/', views.delete_land_registration, name='delete_land_registration'),
-    path('password-reset/', auth_views.PasswordResetView.as_view(
-        template_name='land_management/general/password_reset_form.html',
-        email_template_name='land_management/general/password_reset_email.html',
-        subject_template_name='land_management/general/password_reset_subject.txt',
-        success_url='done/'
-    ), name='password_reset'),
+    path('password-reset/', views.password_reset_request, name='password_reset'),
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(
         template_name='land_management/general/password_reset_done.html'
     ), name='password_reset_done'),
@@ -59,4 +58,14 @@ urlpatterns = [
     path('password-reset/complete/', auth_views.PasswordResetCompleteView.as_view(
         template_name='land_management/general/password_reset_complete.html'
     ), name='password_reset_complete'),
+    
+    # Password Reset Approval (Superuser Only)
+    path('password-reset-approval/', views.password_reset_approval_dashboard, name='password_reset_approval_dashboard'),
+    path('password-reset-approval/<int:request_id>/approve/', views.approve_password_reset, name='approve_password_reset'),
+    path('password-reset-approval/<int:request_id>/reject/', views.reject_password_reset, name='reject_password_reset'),
+    
+    # Notifications (Superuser Only)
+    path('notifications/', views.notifications_view, name='notifications'),
+    path('notifications/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
+    path('ajax/check-password-reset/', views.check_pending_password_reset, name='ajax_check_password_reset'),
 ] 

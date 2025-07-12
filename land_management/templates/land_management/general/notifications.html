@@ -1,0 +1,100 @@
+{% extends 'land_management/general/base.html' %}
+{% load static %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Notifications</h1>
+        <p class="text-gray-600">View and manage your system notifications</p>
+    </div>
+
+    {% if messages %}
+    <div class="mb-6">
+        {% for message in messages %}
+        <div class="p-4 mb-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800 border border-green-200{% elif message.tags == 'error' %}bg-red-100 text-red-800 border border-red-200{% else %}bg-blue-100 text-blue-800 border border-blue-200{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Notifications List -->
+    <div class="bg-white rounded-lg shadow-md">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800">All Notifications ({{ notifications.count }})</h2>
+        </div>
+        <div class="overflow-x-auto">
+            {% if notifications %}
+            <div class="divide-y divide-gray-200">
+                {% for notification in notifications %}
+                <div class="p-6 hover:bg-gray-50 transition-colors duration-200 {% if not notification.is_read %}bg-blue-50 border-l-4 border-blue-400{% endif %}">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-3">
+                                <div class="flex-shrink-0">
+                                    {% if notification.notification_type == 'password_reset' %}
+                                        <i class="fas fa-key text-blue-500 text-lg"></i>
+                                    {% elif notification.notification_type == 'registration' %}
+                                        <i class="fas fa-file-signature text-green-500 text-lg"></i>
+                                    {% elif notification.notification_type == 'approval' %}
+                                        <i class="fas fa-check-circle text-yellow-500 text-lg"></i>
+                                    {% elif notification.notification_type == 'payment' %}
+                                        <i class="fas fa-money-bill text-green-500 text-lg"></i>
+                                    {% else %}
+                                        <i class="fas fa-bell text-gray-500 text-lg"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="text-lg font-medium text-gray-900 {% if not notification.is_read %}font-semibold{% endif %}">
+                                        {{ notification.title }}
+                                    </h3>
+                                    <p class="text-gray-600 mt-1">{{ notification.message }}</p>
+                                    <div class="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                                        <span>
+                                            <i class="fas fa-clock mr-1"></i>
+                                            {{ notification.created_at|date:"M d, Y H:i" }}
+                                        </span>
+                                        <span class="px-2 py-1 bg-gray-100 rounded-full text-xs">
+                                            {{ notification.get_notification_type_display }}
+                                        </span>
+                                        {% if not notification.is_read %}
+                                        <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                                            New
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            {% if notification.notification_type == 'password_reset' and notification.related_object_id %}
+                            <a href="{% url 'land_management:password_reset_approval_dashboard' %}" 
+                               class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                <i class="fas fa-external-link-alt mr-1"></i>
+                                View Requests
+                            </a>
+                            {% endif %}
+                            {% if not notification.is_read %}
+                            <a href="{% url 'land_management:mark_notification_read' notification.id %}" 
+                               class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                                <i class="fas fa-check mr-1"></i>
+                                Mark Read
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="px-6 py-8 text-center">
+                <i class="fas fa-bell text-gray-300 text-4xl mb-4"></i>
+                <p class="text-gray-500">No notifications to display</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

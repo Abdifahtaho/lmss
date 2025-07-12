@@ -1,4 +1,5 @@
 from django import forms
+from django.contrib.auth.forms import SetPasswordForm as DjangoSetPasswordForm
 from django.contrib.auth.models import User
 from .models import (
     LandRegistration,
@@ -9,12 +10,16 @@ from .models import (
     Approval
 )
 from django.core.exceptions import ValidationError
+from django.contrib.auth.forms import PasswordResetForm
 
 class LandRegistrationForm(forms.ModelForm):
     class Meta:
         model = LandRegistration
         exclude = ['user', 'status', 'rejection_comment', 'current_step', 'transaction_reference']
         widgets = {
+            # Registration Type
+            'registration_type': forms.Select(attrs={'class': 'form-control'}),
+            
             # Seller Information
             'seller_full_name': forms.TextInput(attrs={'class': 'form-control'}),
             'seller_national_id': forms.TextInput(attrs={'class': 'form-control'}),
@@ -290,6 +295,108 @@ class MayorApprovalForm(forms.ModelForm):
 
         return cleaned_data
 
+class GiftLandRegistrationForm(forms.ModelForm):
+    class Meta:
+        model = LandRegistration
+        exclude = ['user', 'status', 'rejection_comment', 'current_step', 'transaction_reference', 'sale_price']
+        widgets = {
+            # Registration Type (hidden, set to gift)
+            'registration_type': forms.HiddenInput(attrs={'value': 'gift'}),
+            
+            # Donor Information (seller)
+            'seller_full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Donor Full Name'}),
+            'seller_national_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Donor National ID'}),
+            'seller_birth_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'seller_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Donor Phone'}),
+            'seller_address': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Donor Address'}),
+            
+            # Recipient Information (buyer)
+            'buyer_full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Recipient Full Name'}),
+            'buyer_national_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Recipient National ID'}),
+            'buyer_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Recipient Phone'}),
+            'buyer_address': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Recipient Address'}),
+            
+            # Land Information
+            'land_code': forms.TextInput(attrs={'class': 'form-control'}),
+            'land_size': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 6x12, 12/24, etc.'}),
+            'size_unit': forms.Select(attrs={'class': 'form-control'}, choices=[
+                ('sqm', 'Square Meters'),
+                ('hectares', 'Hectares'),
+                ('acres', 'Acres'),
+            ]),
+            'land_use_type': forms.Select(attrs={'class': 'form-control'}),
+            'land_zone': forms.TextInput(attrs={'class': 'form-control'}),
+            'land_district': forms.TextInput(attrs={'class': 'form-control'}),
+            'land_region': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            # Gift Details
+            'date_of_sale': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'title_deed_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'title_deed_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'sale_deed_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Gift Deed Number'}),
+            'sale_deed_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            
+            # Transaction Participants
+            'notary_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'guarantor_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'witness1_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'witness2_name': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            # Documents
+            'documents': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+
+class InheritanceLandRegistrationForm(forms.ModelForm):
+    class Meta:
+        model = LandRegistration
+        exclude = ['user', 'status', 'rejection_comment', 'current_step', 'transaction_reference', 'sale_price']
+        widgets = {
+            # Registration Type (hidden, set to inheritance)
+            'registration_type': forms.HiddenInput(attrs={'value': 'inheritance'}),
+            
+            # Deceased Information (seller)
+            'seller_full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Deceased Person Full Name'}),
+            'seller_national_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Deceased National ID'}),
+            'seller_birth_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'seller_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Deceased Phone (if available)'}),
+            'seller_address': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Deceased Address'}),
+            
+            # Heir Information (buyer)
+            'buyer_full_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Heir Full Name'}),
+            'buyer_national_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Heir National ID'}),
+            'buyer_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Heir Phone'}),
+            'buyer_address': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': 'Heir Address'}),
+            
+            # Land Information
+            'land_code': forms.TextInput(attrs={'class': 'form-control'}),
+            'land_size': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. 6x12, 12/24, etc.'}),
+            'size_unit': forms.Select(attrs={'class': 'form-control'}, choices=[
+                ('sqm', 'Square Meters'),
+                ('hectares', 'Hectares'),
+                ('acres', 'Acres'),
+            ]),
+            'land_use_type': forms.Select(attrs={'class': 'form-control'}),
+            'land_zone': forms.TextInput(attrs={'class': 'form-control'}),
+            'land_district': forms.TextInput(attrs={'class': 'form-control'}),
+            'land_region': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            # Inheritance Details
+            'date_of_sale': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'title_deed_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'title_deed_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'sale_deed_number': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Inheritance Deed Number'}),
+            'sale_deed_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            
+            # Transaction Participants
+            'notary_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'guarantor_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'witness1_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'witness2_name': forms.TextInput(attrs={'class': 'form-control'}),
+            
+            # Documents
+            'documents': forms.FileInput(attrs={'class': 'form-control'}),
+        }
+
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
@@ -318,3 +425,36 @@ class UserCreateForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username', 'email', 'password', 'first_name', 'last_name', 'is_staff', 'is_superuser'] 
+
+class UsernamePasswordResetForm(forms.Form):
+    username = forms.CharField(
+        label='Username', 
+        max_length=150,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Enter your username'})
+    )
+    reason = forms.CharField(
+        label='Reason for password reset',
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control', 
+            'rows': 3, 
+            'placeholder': 'Please provide a reason for your password reset request (optional)'
+        })
+    )
+
+    def clean_username(self):
+        username = self.cleaned_data['username']
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            raise forms.ValidationError('No user found with this username.')
+        return username
+
+    def get_user(self):
+        username = self.cleaned_data['username']
+        return User.objects.get(username=username) 
+
+class SetPasswordForm(DjangoSetPasswordForm):
+    class Meta:
+        model = User
+        fields = ['new_password1', 'new_password2'] 

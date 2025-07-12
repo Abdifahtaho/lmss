@@ -103,7 +103,9 @@
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="registrationsDropdown">
                         <li><a class="dropdown-item" href="{% url 'land_management:registration_list' %}"><i class="fas fa-list me-2"></i>All Registrations</a></li>
-                        <li><a class="dropdown-item" href="{% url 'land_management:land_registration' %}"><i class="fas fa-plus me-2"></i>New Registration</a></li>
+                        <li><a class="dropdown-item" href="{% url 'land_management:land_registration' %}"><i class="fas fa-handshake me-2"></i>Land Sale</a></li>
+                        <li><a class="dropdown-item" href="{% url 'land_management:gift_land_registration' %}"><i class="fas fa-gift me-2"></i>Gift Land</a></li>
+                        <li><a class="dropdown-item" href="{% url 'land_management:inheritance_land_registration' %}"><i class="fas fa-scroll me-2"></i>Inheritance</a></li>
                     </ul>
                 </li>
                 <li><a href="{% url 'land_management:list_survey_payments' %}"><i class="fas fa-money-check-alt me-2"></i>Survey Payments</a></li>
@@ -118,6 +120,15 @@
                 <li class="text-uppercase  small px-3 mt-3 mb-1" style="color: white;">Other</li>
                 <li><a href="{% url 'land_management:certificate_list' %}"><i class="fas fa-certificate me-2"></i>Certificates</a></li>
                 <li><a href="{% url 'land_management:report' %}"><i class="fas fa-chart-line me-2"></i>Reports</a></li>
+                {% if request.user.is_superuser %}
+                <li><a href="{% url 'land_management:notifications' %}">
+                    <i class="fas fa-bell me-2"></i>Notifications
+                    {% if notifications_list %}
+                    <span class="badge bg-danger ms-2">{{ notifications_list.count }}</span>
+                    {% endif %}
+                </a></li>
+                <li><a href="{% url 'land_management:password_reset_approval_dashboard' %}"><i class="fas fa-key me-2"></i>Password Reset Approval</a></li>
+                {% endif %}
                 {% if not request.user.is_staff or request.user.is_superuser %}
                 <li><a href="{% url 'land_management:profile' %}"><i class="fas fa-user me-2"></i>My Profile</a></li>
                 {% endif %}
