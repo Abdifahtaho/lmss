@@ -36,6 +36,94 @@
                                 </div>
                             </div>
                         </div>
+                    <!-- Survey Payment Details -->
+<div class="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
+    <h3 class="text-lg font-semibold text-green-700 mb-2 flex items-center"><i class="fas fa-money-check-alt mr-2"></i>Survey Payment Details</h3>
+    {% if survey_payment %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+        <div>
+            <p><strong>Admin Name:</strong> {{ survey_payment.admin_name }}</p>
+            <p><strong>Payer Name:</strong> {{ survey_payment.payer_name }}</p>
+            <p><strong>Payment Amount:</strong> {{ survey_payment.payment_amount }}</p>
+            <p><strong>Payment Method:</strong> {{ survey_payment.payment_method }}</p>
+        </div>
+        <div>
+            <p><strong>Payment Date:</strong> {{ survey_payment.payment_date }}</p>
+            <p><strong>Payment Status:</strong> {{ survey_payment.payment_status }}</p>
+            <p><strong>Receipt:</strong> {% if survey_payment.payment_receipt %}<a href="{{ survey_payment.payment_receipt.url }}" target="_blank">View Receipt</a>{% else %}N/A{% endif %}</p>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted">No survey payment information available.</p>
+    {% endif %}
+</div>
+<!-- Land Survey Details -->
+<div class="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+    <h3 class="text-lg font-semibold text-yellow-700 mb-2 flex items-center"><i class="fas fa-map-marked-alt mr-2"></i>Land Survey Details</h3>
+    {% if land_survey %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+        <div>
+            <p><strong>Survey Number:</strong> {{ land_survey.survey_number }}</p>
+            <p><strong>Parcel Number:</strong> {{ land_survey.parcel_number }}</p>
+            <p><strong>Land Code:</strong> {{ land_survey.land_code }}</p>
+            <p><strong>Owner Name:</strong> {{ land_survey.owner_name }}</p>
+        </div>
+        <div>
+            <p><strong>Survey Date:</strong> {{ land_survey.survey_date }}</p>
+            <p><strong>Surveyor Name:</strong> {{ land_survey.surveyor_name }}</p>
+            <p><strong>Survey Location:</strong> {{ land_survey.survey_location }}</p>
+            <p><strong>Coordinates:</strong> {{ land_survey.coordinates }}</p>
+            <p><strong>Land Direction:</strong> {{ land_survey.land_direction }}</p>
+            <p><strong>Documents:</strong> {% if land_survey.survey_documents %}<a href="{{ land_survey.survey_documents.url }}" target="_blank">View Documents</a>{% else %}N/A{% endif %}</p>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted">No land survey information available.</p>
+    {% endif %}
+</div>
+<!-- Tax Payment Details -->
+<div class="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+    <h3 class="text-lg font-semibold text-red-700 mb-2 flex items-center"><i class="fas fa-file-invoice-dollar mr-2"></i>Tax Payment Details</h3>
+    {% if tax_payment %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+        <div>
+            <p><strong>Admin Full Name:</strong> {{ tax_payment.admin_fullname }}</p>
+            <p><strong>Land Owner Name:</strong> {{ tax_payment.land_owner_name }}</p>
+            <p><strong>Land Reference No:</strong> {{ tax_payment.land_reference_no }}</p>
+            <p><strong>Land Price:</strong> {{ tax_payment.land_price }}</p>
+        </div>
+        <div>
+            <p><strong>Tax Price:</strong> {{ tax_payment.tax_price }}</p>
+            <p><strong>Payment Date:</strong> {{ tax_payment.payment_date }}</p>
+            <p><strong>Payment Status:</strong> {{ tax_payment.payment_status }}</p>
+            <p><strong>Receipt Number:</strong> {{ tax_payment.receipt_number }}</p>
+            <p><strong>Notes:</strong> {{ tax_payment.notes }}</p>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted">No tax payment information available.</p>
+    {% endif %}
+</div>
+<!-- Land Mapping Details -->
+<div class="mb-6 bg-purple-50 border border-purple-200 rounded-lg p-4">
+    <h3 class="text-lg font-semibold text-purple-700 mb-2 flex items-center"><i class="fas fa-map mr-2"></i>Land Mapping Details</h3>
+    {% if land_mapping %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+        <div>
+            <p><strong>Land Reference:</strong> {{ land_mapping.land_reference }}</p>
+            <p><strong>Map Coordinates:</strong> {{ land_mapping.map_coordinates }}</p>
+            <p><strong>Mapping Date:</strong> {{ land_mapping.mapping_date }}</p>
+        </div>
+        <div>
+            <p><strong>Mapped By:</strong> {{ land_mapping.mapped_by }}</p>
+            <p><strong>Mapping Status:</strong> {{ land_mapping.mapping_status }}</p>
+            <p><strong>Map Document:</strong> {% if land_mapping.map_document %}<a href="{{ land_mapping.map_document.url }}" target="_blank">View Map</a>{% else %}N/A{% endif %}</p>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted">No land mapping information available.</p>
+    {% endif %}
+</div>
                     <!-- Previous Approvals -->
                     {% if approval.director_status != 'pending' %}
         <div class="mb-4 bg-gray-100 border-l-4 border-blue-400 p-4 rounded">

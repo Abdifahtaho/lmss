@@ -346,6 +346,18 @@ class GiftLandRegistrationForm(forms.ModelForm):
             'documents': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['seller_full_name'].label = 'Donor full name'
+        self.fields['seller_national_id'].label = 'Donor national id'
+        self.fields['seller_birth_date'].label = 'Donor birth date'
+        self.fields['seller_phone'].label = 'Donor phone'
+        self.fields['seller_address'].label = 'Donor address'
+        self.fields['buyer_full_name'].label = 'Recipient full name'
+        self.fields['buyer_national_id'].label = 'Recipient national id'
+        self.fields['buyer_phone'].label = 'Recipient phone'
+        self.fields['buyer_address'].label = 'Recipient address'
+
 class InheritanceLandRegistrationForm(forms.ModelForm):
     class Meta:
         model = LandRegistration
@@ -396,6 +408,18 @@ class InheritanceLandRegistrationForm(forms.ModelForm):
             # Documents
             'documents': forms.FileInput(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['seller_full_name'].label = 'Deceased full name'
+        self.fields['seller_national_id'].label = 'Deceased national id'
+        self.fields['seller_birth_date'].label = 'Deceased birth date'
+        self.fields['seller_phone'].label = 'Deceased phone (if available)'
+        self.fields['seller_address'].label = 'Deceased address'
+        self.fields['buyer_full_name'].label = 'Heir full name'
+        self.fields['buyer_national_id'].label = 'Heir national id'
+        self.fields['buyer_phone'].label = 'Heir phone'
+        self.fields['buyer_address'].label = 'Heir address'
 
 class ProfileForm(forms.ModelForm):
     class Meta:
