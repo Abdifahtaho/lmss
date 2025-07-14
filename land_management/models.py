@@ -53,13 +53,14 @@ class LandRegistration(models.Model):
         ('building', 'Building'),
         ('road', 'Road'),
         ('empty', 'Empty'),
+        
     ]
     
     # Registration Type
-    registration_type = models.CharField(max_length=30, choices=REGISTRATION_TYPE_CHOICES, default='sale')
+    registration_type = models.CharField(max_length=30, choices=REGISTRATION_TYPE_CHOICES, default='sale', blank=True)
     
     # Basic Information
-    transaction_reference = models.CharField(max_length=20, unique=True)
+    transaction_reference = models.CharField(max_length=50, unique=True)
     date_of_sale = models.DateField()
     register_date = models.DateField(auto_now_add=True)
     sale_price = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)  # Optional for non-sale types
@@ -78,7 +79,7 @@ class LandRegistration(models.Model):
     buyer_address = models.TextField(blank=True, null=True)
     
     # Land Information
-    land_code = models.CharField(max_length=20, unique=True)
+    land_code = models.CharField(max_length=20, unique=True, blank=True)
     land_size = models.CharField(max_length=10)  # Allow any value
     size_unit = models.CharField(max_length=10, default='sqm', blank=True)
     land_zone = models.CharField(max_length=100)
@@ -90,6 +91,7 @@ class LandRegistration(models.Model):
     land_direction_east = models.CharField(max_length=20, choices=DIRECTION_TYPE_CHOICES, blank=True, null=True)
     land_direction_south = models.CharField(max_length=20, choices=DIRECTION_TYPE_CHOICES, blank=True, null=True)
     land_direction_west = models.CharField(max_length=20, choices=DIRECTION_TYPE_CHOICES, blank=True, null=True)
+    land_direction_north = models.CharField(max_length=20, choices=DIRECTION_TYPE_CHOICES, blank=True, null=True)
     
     # Document Information
     title_deed_number = models.CharField(max_length=50, blank=True, null=True)
@@ -120,6 +122,18 @@ class LandRegistration(models.Model):
         # Only require sale_price for land sale
         if getattr(self, 'registration_type', 'sale') == 'sale' and not self.sale_price:
             raise ValidationError('Sale price is required for land sale transactions.')
+
+    def save(self, *args, **kwargs):
+        if not self.land_code:
+            last = LandRegistration.objects.all().order_by('-id').first()
+            next_num = 1
+            if last and last.land_code and last.land_code.startswith('LAND'):
+                try:
+                    next_num = int(last.land_code[4:]) + 1
+                except ValueError:
+                    pass
+            self.land_code = f"LAND{next_num:03d}"
+        super().save(*args, **kwargs)
 
 class SurveyPayment(models.Model):
     PAYMENT_STATUS = [
@@ -160,6 +174,19 @@ class LandSurvey(models.Model):
     survey_documents = models.FileField(upload_to='survey_documents/')
     land_direction = models.CharField(max_length=255)
     date_created = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+
+    def save(self, *args, **kwargs):
+        if not self.survey_number:
+            last = LandSurvey.objects.all().order_by('-id').first()
+            next_num = 1
+            if last and last.survey_number and last.survey_number.startswith('SN'):
+                try:
+                    next_num = int(last.survey_number[2:]) + 1
+                except ValueError:
+                    pass
+            self.survey_number = f"SN{next_num:03d}"
+        # Remove auto-generation for parcel_number; it must be provided by the user
+        super().save(*args, **kwargs)
     
     def __str__(self):
         return f"Land Survey - {self.survey_number}"
@@ -199,7 +226,6 @@ class LandMapping(models.Model):
     mapping_date = models.DateField()
     mapped_by = models.CharField(max_length=255)
     mapping_status = models.CharField(max_length=20, choices=MAPPING_STATUS, default='pending')
-    map_document = models.FileField(upload_to='map_documents/')
     date_created = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     
     def __str__(self):
@@ -242,7 +268,7 @@ class Approval(models.Model):
     director_full_name = models.CharField(max_length=255, blank=True, null=True)
     director_title = models.CharField(max_length=100, blank=True, null=True)
     director_email = models.EmailField(blank=True, null=True)
-    director_signature = models.FileField(upload_to='signatures/', blank=True, null=True)
+    director_signature = models.FileField(upload_to='signatures/')
     director_status = models.CharField(max_length=20, choices=APPROVAL_STATUS, default='pending')
     director_comment = models.TextField(blank=True, null=True)
     director_approval_date = models.DateField(null=True, blank=True)
@@ -251,7 +277,7 @@ class Approval(models.Model):
     secretary_full_name = models.CharField(max_length=255, blank=True, null=True)
     secretary_title = models.CharField(max_length=100, blank=True, null=True)
     secretary_email = models.EmailField(blank=True, null=True)
-    secretary_signature = models.FileField(upload_to='signatures/', blank=True, null=True)
+    secretary_signature = models.FileField(upload_to='signatures/')
     secretary_status = models.CharField(max_length=20, choices=APPROVAL_STATUS, default='pending')
     secretary_comment = models.TextField(blank=True, null=True)
     secretary_approval_date = models.DateField(null=True, blank=True)
@@ -260,7 +286,7 @@ class Approval(models.Model):
     deputy_mayor_full_name = models.CharField(max_length=255, blank=True, null=True)
     deputy_mayor_title = models.CharField(max_length=100, blank=True, null=True)
     deputy_mayor_email = models.EmailField(blank=True, null=True)
-    deputy_mayor_signature = models.FileField(upload_to='signatures/', blank=True, null=True)
+    deputy_mayor_signature = models.FileField(upload_to='signatures/')
     deputy_mayor_status = models.CharField(max_length=20, choices=APPROVAL_STATUS, default='pending')
     deputy_mayor_comment = models.TextField(blank=True, null=True)
     deputy_mayor_approval_date = models.DateField(null=True, blank=True)
@@ -269,7 +295,7 @@ class Approval(models.Model):
     mayor_full_name = models.CharField(max_length=255, blank=True, null=True)
     mayor_title = models.CharField(max_length=100, blank=True, null=True)
     mayor_email = models.EmailField(blank=True, null=True)
-    mayor_signature = models.FileField(upload_to='signatures/', blank=True, null=True)
+    mayor_signature = models.FileField(upload_to='signatures/')
     mayor_status = models.CharField(max_length=20, choices=APPROVAL_STATUS, default='pending')
     mayor_comment = models.TextField(blank=True, null=True)
     mayor_approval_date = models.DateField(null=True, blank=True)

@@ -72,8 +72,6 @@
             <p><strong>Survey Date:</strong> {{ land_survey.survey_date }}</p>
             <p><strong>Surveyor Name:</strong> {{ land_survey.surveyor_name }}</p>
             <p><strong>Survey Location:</strong> {{ land_survey.survey_location }}</p>
-            <p><strong>Coordinates:</strong> {{ land_survey.coordinates }}</p>
-            <p><strong>Land Direction:</strong> {{ land_survey.land_direction }}</p>
             <p><strong>Documents:</strong> {% if land_survey.survey_documents %}<a href="{{ land_survey.survey_documents.url }}" target="_blank">View Documents</a>{% else %}N/A{% endif %}</p>
         </div>
     </div>

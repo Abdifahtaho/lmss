@@ -40,7 +40,6 @@
                     <h3 class="text-lg font-semibold text-purple-700">Land Information</h3>
                         </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 rounded-b-lg p-4">
-                    {{ form.land_code|as_crispy_field }}
                     {{ form.land_size|as_crispy_field }}
                     {{ form.size_unit|as_crispy_field }}
                     {{ form.land_use_type|as_crispy_field }}
@@ -50,6 +49,7 @@
                     {{ form.land_direction_east|as_crispy_field }}
                     {{ form.land_direction_south|as_crispy_field }}
                     {{ form.land_direction_west|as_crispy_field }}
+                    {{ form.land_direction_north|as_crispy_field }}
                                 </div>
                             </div>
             <!-- Transaction Details -->

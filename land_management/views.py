@@ -190,20 +190,22 @@ def land_registration(request, registration_id=None):
     if request.method == 'POST':
         try:
             if registration: # Editing an existing registration
-                form = LandRegistrationForm(request.POST, request.FILES, instance=registration)
+                form = LandRegistrationForm(request.POST, request.FILES, instance=registration, initial={'registration_type': 'sale'})
             else: # Creating a new registration
-                form = LandRegistrationForm(request.POST, request.FILES)
+                form = LandRegistrationForm(request.POST, request.FILES, initial={'registration_type': 'sale'})
             
             if form.is_valid():
                 registration = form.save(commit=False)
                 registration.user = request.user
                 registration.status = 'pending'
                 registration.current_step = 'registration' # Reset to initial step if returned for correction
-
+                registration.registration_type = 'sale'
+                if not registration.registration_type:
+                    messages.error(request, "Error: Object 'LandRegistration' is missing required field 'registration_type'.")
+                    return render(request, 'land_management/registrations/land_registration.html', {'form': form, 'registration': registration})
                 # Generate unique transaction_reference only for new registrations
                 if not registration_id:
                     registration.transaction_reference = f"TR-{timezone.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6].upper()}"
-
                 registration.save()
 
                 # If this was a returned registration, clear approval return info
@@ -218,14 +220,17 @@ def land_registration(request, registration_id=None):
                 messages.success(request, f'Land registration submitted successfully! Transaction Reference: {registration.transaction_reference}')
                 return redirect('land_management:survey_payment', registration_id=registration.id)
             else:
-                messages.error(request, 'Please correct the errors in the form.')
+                # Show all form errors with field names
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"Field {field}: {error}")
         except Exception as e:
             messages.error(request, f'Error saving registration: {str(e)}')
     else: # GET request
         if registration: # Pre-fill form for existing registration
-            form = LandRegistrationForm(instance=registration)
+            form = LandRegistrationForm(instance=registration, initial={'registration_type': 'sale'})
         else: # Blank form for new registration
-            form = LandRegistrationForm()
+            form = LandRegistrationForm(initial={'registration_type': 'sale'})
 
     return render(request, 'land_management/registrations/land_registration.html', {'form': form, 'registration': registration})
 
@@ -310,7 +315,7 @@ def tax_payment(request, registration_id):
         existing_payment = None
 
     if request.method == 'POST':
-        form = TaxPaymentForm(request.POST, instance=existing_payment)
+        form = TaxPaymentForm(request.POST, instance=existing_payment, registration=registration)
         if form.is_valid():
             payment = form.save(commit=False)
             payment.land_registration = registration
@@ -328,14 +333,15 @@ def tax_payment(request, registration_id):
             messages.error(request, 'Please correct the errors below.')
     else:
         # Pre-fill some fields with registration data
+        tax_price = float(registration.sale_price) * 0.05 if registration.sale_price else 0
         initial_data = {
             'admin_fullname': request.user.get_full_name() or request.user.username,
             'land_owner_name': registration.buyer_full_name,
             'land_reference_no': registration.transaction_reference,
             'land_price': registration.sale_price, # Assuming land price is sale price
-            'tax_price': float(registration.sale_price) * 0.05, # Example: 5% of sale price as tax
+            'tax_price': tax_price, # Example: 5% of sale price as tax
         }
-        form = TaxPaymentForm(instance=existing_payment, initial=initial_data)
+        form = TaxPaymentForm(instance=existing_payment, initial=initial_data, registration=registration)
 
     return render(request, 'land_management/payments/tax_payment.html', {
         'form': form,
@@ -879,7 +885,7 @@ def download_certificate_pdf(request, registration_id):
     ]):
         messages.error(request, 'Cannot print certificate: Not all steps are completed or final approval is not granted.')
         return redirect('land_management:certificate_list')
-
+    
     buffer = BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=A4)
     elements = []

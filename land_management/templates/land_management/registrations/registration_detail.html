@@ -101,26 +101,6 @@
             </div>
         </div>
 
-        <!-- Land Direction Information -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h4>Land Direction Information</h4>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <p><strong>East Direction:</strong> {{ registration.land_direction_east|title|default:"Not specified" }}</p>
-                    </div>
-                    <div class="col-md-4">
-                        <p><strong>South Direction:</strong> {{ registration.land_direction_south|title|default:"Not specified" }}</p>
-                    </div>
-                    <div class="col-md-4">
-                        <p><strong>West Direction:</strong> {{ registration.land_direction_west|title|default:"Not specified" }}</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Document Information -->
         <div class="card mb-4">
             <div class="card-header">
@@ -254,7 +234,6 @@
                         <p><strong>Mapped By:</strong> {{ land_mapping.mapped_by }}</p>
                     </div>
                     <div class="col-md-6">
-                        <p><strong>Map Coordinates:</strong> {{ land_mapping.map_coordinates }}</p>
                         <p><strong>Mapping Status:</strong> <span class="badge bg-info">{{ land_mapping.mapping_status|title }}</span></p>
                         <p><strong>Map Document:</strong> <a href="{{ land_mapping.map_document.url }}" target="_blank">View Map</a></p>
                     </div>

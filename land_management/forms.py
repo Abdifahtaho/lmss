@@ -15,7 +15,7 @@ from django.contrib.auth.forms import PasswordResetForm
 class LandRegistrationForm(forms.ModelForm):
     class Meta:
         model = LandRegistration
-        exclude = ['user', 'status', 'rejection_comment', 'current_step', 'transaction_reference']
+        exclude = ['user', 'status', 'rejection_comment', 'current_step', 'transaction_reference', 'land_code']
         widgets = {
             # Registration Type
             'registration_type': forms.Select(attrs={'class': 'form-control'}),
@@ -62,7 +62,24 @@ class LandRegistrationForm(forms.ModelForm):
             
             # Documents
             'documents': forms.FileInput(attrs={'class': 'form-control'}),
+            'land_direction_east': forms.Select(attrs={'class': 'form-control'}),
+            'land_direction_south': forms.Select(attrs={'class': 'form-control'}),
+            'land_direction_west': forms.Select(attrs={'class': 'form-control'}),
+            'land_direction_north': forms.Select(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set the default for excluded field on new objects
+        if not self.instance.pk:
+            self.instance.registration_type = 'sale'
+
+    def clean(self):
+        cleaned_data = super().clean()
+        # Ensure registration_type is always set
+        if not self.instance.registration_type:
+            self.instance.registration_type = 'sale'
+        return cleaned_data
 
 class SurveyPaymentForm(forms.ModelForm):
     class Meta:
@@ -80,17 +97,15 @@ class SurveyPaymentForm(forms.ModelForm):
 class LandSurveyForm(forms.ModelForm):
     class Meta:
         model = LandSurvey
-        exclude = ['land_registration', 'date_created', 'coordinates']
+        exclude = ['land_registration', 'date_created', 'coordinates', 'land_direction', 'survey_number']  # allow parcel_number to be input
         widgets = {
-            'survey_number': forms.TextInput(attrs={'class': 'form-control'}),
-            'parcel_number': forms.TextInput(attrs={'class': 'form-control'}),
             'land_code': forms.TextInput(attrs={'class': 'form-control'}),
             'owner_name': forms.TextInput(attrs={'class': 'form-control'}),
             'survey_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'surveyor_name': forms.TextInput(attrs={'class': 'form-control'}),
             'survey_location': forms.TextInput(attrs={'class': 'form-control'}),
             'survey_documents': forms.FileInput(attrs={'class': 'form-control'}),
-            'land_direction': forms.TextInput(attrs={'class': 'form-control'}),
+            # 'land_direction': forms.TextInput(attrs={'class': 'form-control'}),  # Remove or comment out
         }
 
     def clean(self):
@@ -131,10 +146,22 @@ class TaxPaymentForm(forms.ModelForm):
             'notes': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        registration = kwargs.pop('registration', None)
+        super().__init__(*args, **kwargs)
+        if registration:
+            if getattr(registration, 'registration_type', None) == 'inheritance':
+                self.fields['land_price'].disabled = False
+                self.fields['land_price'].required = True
+                self.fields['land_price'].initial = None
+            else:
+                self.fields['land_price'].initial = registration.sale_price
+                self.fields['land_price'].disabled = True
+
 class LandMappingForm(forms.ModelForm):
     class Meta:
         model = LandMapping
-        exclude = ['land_registration']
+        exclude = ['land_registration', 'map_document']
         widgets = {
             'mapping_date': forms.DateInput(attrs={'type': 'date'}),
             'mapping_status': forms.Select(attrs={'class': 'form-control'}),
